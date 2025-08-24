@@ -1,0 +1,2858 @@
+<?
+
+if($_GET['page'] == "flipbook") { include $_GET['page'].".php"; exit; }
+
+include "database.php";
+
+$shoppingbag_ccode = $_SESSION['shoppingbag_ccode'];
+$shoppingbag_pcode = $_SESSION['shoppingbag_pcode'];
+$shoppingbag_quant = $_SESSION['shoppingbag_quant'];
+$shoppingbag_color = $_SESSION['shoppingbag_color'];
+$shoppingbag_forma = $_SESSION['shoppingbag_forma'];
+
+if($_GET['sel'] == "signout") unset($_SESSION['userid']);
+
+if($_GET['sel'] == "signin") {
+
+	$sql = mysqli_query($dbc,"SELECT * FROM users WHERE email = '".$_POST['email']."'");
+	if(mysqli_num_rows($sql) == 0) $email_not_found=1;
+	else {
+		$sql = mysqli_query($dbc,"SELECT * FROM users WHERE email = '".$_POST['email']."' AND password = '".$_POST['password']."'");
+		if(mysqli_num_rows($sql) == 0) $incorrect_password=1;
+		else {
+			$urow = mysqli_fetch_assoc($sql); $_SESSION['userid'] = $urow['id'];
+			//echo "signed in as ".$_POST['email'];
+		}
+	}
+}
+
+if($_GET['sel'] == "register") {
+
+	$sql = mysqli_query($dbc,"SELECT * FROM users WHERE email = '".$_POST['email']."'");
+	if(mysqli_num_rows($sql) > 0) $email_in_use=1;
+	else {
+		mysqli_query($dbc,"INSERT INTO users (email,password,receive_nl) VALUES ('"
+			.res($_POST['email'])."','".res($_POST['password'])."','".res($_POST['receive_nl'])."')");
+
+		$sql = mysqli_query($dbc,"SELECT id FROM users WHERE email = '".$_POST['email']."' AND password = '".$_POST['password']."'");
+		$urow = mysqli_fetch_assoc($sql); $_SESSION['userid'] = $urow['id'];
+		//echo "your account is registered";
+	}
+}
+
+if($_GET['sel'] == "update" && $_GET['page'] == "account") {
+
+	mysqli_query($dbc,"UPDATE users SET"
+	." email = '"				.res($_POST['email'])."',"
+	." password = '"		.res($_POST['password'])."',"
+	." receive_nl = '"	.res($_POST['receive_nl'])."',"
+	." d_title = '"			.res($_POST['d_title'])."',"
+	." d_fname = '"			.res($_POST['d_fname'])."',"
+	." d_sname = '"			.res($_POST['d_sname'])."',"
+	." d_phone = '"			.res($_POST['d_phone'])."',"
+	." d_address1 = '"	.res($_POST['d_address1'])."',"
+	." d_address2 = '"	.res($_POST['d_address2'])."',"
+	." d_city = '"			.res($_POST['d_city'])."',"
+	." d_state = '"			.res($_POST['d_country']=="US"?$_POST['d_state_us']:$_POST['d_state_ca'])."',"
+	." d_zip = '"				.res($_POST['d_zip'])."',"
+	." d_country = '"		.res($_POST['d_country'])."',"
+	." d_service = '"		.($delivery_services?res($_POST['d_service']):"")."',"
+	." billsame = '"		.res($_POST['billsame'])."',"
+	." b_title = '"			.res($_POST['b_title'])."',"
+	." b_fname = '"			.res($_POST['b_fname'])."',"
+	." b_sname = '"			.res($_POST['b_sname'])."',"
+	." b_phone = '"			.res($_POST['b_phone'])."',"
+	." b_address1 = '"	.res($_POST['b_address1'])."',"
+	." b_address2 = '"	.res($_POST['b_address2'])."',"
+	." b_city = '"			.res($_POST['b_city'])."',"
+	." b_state = '"			.res($_POST['b_country']=="US"?$_POST['b_state_us']:$_POST['b_state_ca'])."',"
+	." b_zip = '"				.res($_POST['b_zip'])."',"
+	." b_country = '"		.res($_POST['b_country'])."',"
+	." paytype = '"			.res($_POST['paytype'])."',"
+	." cardtype = '"		.res($_POST['cardtype'])."',"
+	." cardnum = '"			.res($_POST['cardnum'])."',"
+	." cardname = '"		.res($_POST['cardname'])."',"
+	." expmo = '"				.res($_POST['expmo'])."',"
+	." expyr = '"				.res($_POST['expyr'])."',"
+	." seccode = '"			.res($_POST['seccode'])."'"
+	." WHERE id = '"		.$_SESSION['userid']."'");
+}
+
+$page = "home"; foreach($pageTitles as $key => $value) if($key == $_GET['page']) { $page = $key; break; }
+if($page=="home" || $page=="products" || $page=="product") {
+				if($_SESSION['app_url']=="https://sldigest.com/") $page = "sldigest";
+	else if($_SESSION['app_url']=="https://sldproducts.effexhost.com/") $page = "sld-products";
+	else if($_SESSION['app_url']=="https://kensdeli-bakery-gifts.com/") $page = "deli-bakery";
+}
+
+if(0) include "products-init.php";
+?>
+
+<?if($page != "shbagdrop") {?>
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<title><?=$app_title?> | <?=$pageTitles[$page]?></title>
+
+	<link rel="shortcut icon" href="/images/favicon.ico">
+
+	<link rel="icon" href="/images/cropped-barn-32x32.png" sizes="32x32" />
+	<link rel="icon" href="/images/cropped-barn-192x192.png" sizes="192x192" />
+	<link rel="apple-touch-icon" href="/images/cropped-barn-180x180.png" />
+	<meta name="msapplication-TileImage" content="/images/cropped-barn-270x270.png" />
+
+	<link rel="stylesheet" media="all" type="text/css" href="/css/style.css" />
+	<?if($page=="sld-products"||$page=="deli-bakery"){?>
+		<link rel="stylesheet" media="all" type="text/css" href="/css/style-clusters.css" /><?}?>
+
+	<meta name="viewport" content="width=device-width,initial-scale=1.0"><!-- handles css media query on window resize -->
+	<?if($_SESSION['app_url']=="https://sldproducts.effexhost.com/") {?>
+		<meta name="description" content="SLD Products. The home of natural quality" />
+		<meta name="keywords" content="Aloe Vera,1st Aid Gel,New Eyes,Nopal,SportaRub,Anodin Plus,Ken's Best,Catherine's Choice,Supplements" />
+	<?} else {?>
+		<meta name="description" content="Ken's Amish Deli & Bakery. We select the best ingredients for our products made the old fashioned way." />
+		<meta name="keywords" content="Amish Deli,Amish Bakery,Amish Market,Amish Store,Meats,Cheeses,Bagels,Croissants,Pies,Jams,Jellies,Coffees,Gift Baskets,Snacks" />
+	<?}?>
+	<script src="/scripts/scripts.js" type="text/javascript"></script>
+	</head>
+	<body>
+<?}?>
+
+<?/*if(($page != "newsletter" && $page != "home" && $page != "shbagdrop" && $page != "checkout")||$_GET['sel']==1) {?>
+	<a href="/newsletter/"><div class="newsletter-popup">
+		<span class="nowrap">INSPIRATION, DELIVERED.</span>
+		<span class="nowrap">Enjoy news, sales events and exclusive offers.</span>
+		<span class="nowrap">Sign up to our newsletter. ▸</span>
+	</div></a>
+	<a href="/prints/"><div class="blackfriday-popup">
+		<span class="nowrap">BLACK FRIDAY SALE</span>&nbsp;&nbsp;
+		<span class="nowrap">25% off all Linen Prints</span>&nbsp;&nbsp;
+		<span class="nowrap">Nov 23 2018 only</span>
+	</div></a>
+	<script>if(new Date().toLocaleDateString("en-US") == "11/23/2018") eC0('blackfriday-popup').style.display = "block";</script>
+<?}*/?>
+
+
+<?if($page != "shbagdrop") {?>
+<div class="menu z5">
+	<div class="menu-outer">
+		<?if($page == "checkout") {?>
+			<div class="logo">
+				<?if($_SESSION['app_url'] == "https://sldproducts.effexhost.com/") {?>
+					<img class="logo" src="/images/SLD-Products.png" alt="<?=$contact_name_part?> Logo">
+					<!-- <div class="logosubtitle">The home of natural quality</div> -->
+				<?} else {?>
+					<img class="logo" src="/images/Kens-Deli-Bakery-And-Gifts.png" alt="<?=$contact_name_part?> Logo">
+					<div class="logosubtitle">We select the best ingredients for our products<br>made the old fashioned way.</div>
+				<?}?>
+			</div>
+			<div class="checkout-nextact">
+				<a class="backto" href="/<?=($_SESSION['app_url']=='https://sldproducts.effexhost.com/')?'sld-products':'deli-bakery'?>/">CONTINUE SHOPPING</a>
+			</div>
+		<?} else {?>
+			<a class="logo" href="<?=$app_url?>">
+				<?if($_SESSION['app_url'] == "https://sldproducts.effexhost.com/") {?>
+					<img class="logo" src="/images/SLD-Products.png" alt="<?=$contact_name_part?> Logo">
+					<!-- <div class="logosubtitle">The home of natural quality</div> -->
+				<?} else {?>
+					<img class="logo" src="/images/Kens-Deli-Bakery-And-Gifts.png" alt="<?=$contact_name_part?> Logo">
+					<div class="logosubtitle">We select the best ingredients for our products<br>made the old fashioned way.</div>
+				<?}?>
+			</a>
+			<div class="menuinner">
+
+				<?if($_SESSION['app_url'] == "https://sldproducts.effexhost.com/") {?>
+					<div class="mainmenu"><a class="mainmenu menufsize" href="/sld-products/">SLD PRODUCTS</a></div>
+					<div class="mainmenu"><a class="mainmenu menufsize" href="/sldigest/">SL DIGEST</a></div>
+					<!-- <div class="mainmenu"><a class="mainmenu menufsize" href="/deli-bakery/">DELI & BAKERY</a></div> -->
+					<div class="mainmenu"><a class="mainmenu menufsize" href="https://kensamishmarket.com/">DELI & BAKERY</a></div>
+				<?} else {?>
+					<div class="mainmenu"><a class="mainmenu menufsize" href="/deli-bakery/">DELI & BAKERY</a></div>
+					<div class="mainmenu"><a class="mainmenu menufsize" href="/images/Kens-Deli-Menu--2020-07-07.pdf" target="_blank">DELI MENU</a></div>
+					<div class="mainmenu"><a class="mainmenu menufsize" href="/sldigest/">SL DIGEST</a></div>
+					<div class="mainmenu"><a class="mainmenu menufsize" href="/sld-products/">SLD PRODUCTS</a></div>
+				<?}?>
+				<div class="mainmenu"><a class="mainmenu menufsize" href="/about/">ABOUT</a></div>
+				<? if(!isset($_SESSION['userid'])) {?>
+					<div class="mainmenu"><a class="mainmenu menufsize" href="/account/">SIGN IN</a></div>
+				<?} else {?>
+					<div class="mainmenu">
+						<a class="mainmenu menufsize" href="/account/" onmouseenter="menu('accdrop',1)" onmouseleave="menu('accdrop',0)">ACCOUNT</a>
+						<div id="accdrop" class="submenu-outer" onmouseenter="menu('accdrop',1)" onmouseleave="menu('accdrop',0)">
+							<div class="submenu"><a class="submenu menufsize" href="/account/signout/">SIGN OUT</a></div>
+						</div>
+					</div>
+				<?}?>
+				<?if($page != "shopping-cart") {?>
+					<div class="mainmenu" onmouseenter="shopbagDropdown(1)" onmouseleave="shopbagDropdown(0)">
+						<a class="mainmenu menufsize" href="Javascript:;"	onclick="return shopbagSend()" id="shoppingbag-items">CART</a>
+						<div class="shbag-dropdown" id="shoppingbag-dropdown" onmouseenter="shopbagDropdown(1)" onmouseleave="shopbagDropdown(0)"></div>
+					</div>
+				<?}?>
+				<div class="search">
+					<img class="search" src="/images/search.png" onclick="search(1)">
+					<div id="search" class="searchm-outer">
+						<form action="/search/" method="post" id="searchf">
+							<input type="text" name="search" value="" placeholder="SEARCH" class="search" id="searchi">
+							<input type="image" class="search" src="/images/search.png">
+						</form>
+						<div class="divider"></div>
+						<img class="search1" src="/images/x.png" onclick="search(0)">
+					</div>
+				</div>
+			</div>
+		<?}?>
+	</div>
+</div>
+<!--div class="menubutton z6" onclick="menubuttonToggle('toggle')"></div>
+<script>menubuttonToggle('reset');</script-->
+<?}?>
+
+<? if($page == "home") { //************************* ?>
+	<div class="topcontent p0">
+		<div class="fdspic z2" id="fds_foreground"></div>
+		<div class="fdspic z1" id="fds_background"></div>
+		<script>
+			var fds_path = '/images/opening/';
+			var fds_pics=["Kens-Deli-Exterior-Front.jpg","Kens-Deli-Exterior-Side.jpg","Kens-Deli-Exterior-Front.jpg","Kens-Deli-Exterior-Side.jpg"];
+			fds_preload().done(function(){ fds_fadeshow(); });
+		</script>
+	</div>
+	<script>pfadeRun()</script>
+<?}?>
+
+<? if($page == "about") { //************************* ?>
+	<div class="account-outer">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+
+	<?if($_SESSION['app_url'] == "https://sldproducts.effexhost.com/") {?>
+		<img src="/images/features/warren-and-catherine/It-All-Started-With.jpg">
+	<?} else {?>
+		<div class="aboutnew1">
+			<img class="about-portrait" src="/images/Ken-Gillette-Owner.png" alt="Ken Gillette - Owner">
+			<p>Welcome to Ken’s Country Market-Deli-Bakery! We are a boutique market offering top-quality foods, featuring Amish-made meat, 
+				cheese and jarred goods, plus organic shade-grown coffee and more. Look at our labels – it’s what you DON’T see that makes them naturally good!</p>
+			<p>We’re open Monday through Saturday, 6 am to 6 pm. Our gift shop offers gift baskets full of Amish goodness and fun. Our deli offers Amish meat, 
+				cheese, bacon and butter; Eisenberg hot dogs, brats and Polish sausage;  homemade Cincinnati chili, and more. Our bakery offers authentic kosher
+				New York bagels, and donuts, both fresh daily;  plus apple fritters, scones, pies, cakes and more! You’ll always find something delectable at Ken’s
+				Country Market.</p>
+			<p>Having a party? Planning a meeting? Just call and place your order. We’ll deliver it right to you – or you can zip in to our convenient Curbside
+				Pickup and we’ll bring it out to your car.</p>
+			<p>I want you to feel that this is your kind place and that it helps make your day a little bit better. Today, I’m lucky to have people working at
+				Ken’s Country Market-Deli-Bakery who feel the same way. We’ve been fortunate to attract special people as customers; it’s my hope you’re one of them
+				– and if you’re not, that you will be soon.</p>
+			<p>Stop by and enjoy fresh coffee with a bagel or donut, buy Amish meats and cheeses by the pound, browse our selection of Health and Amish products
+				and gift shop, or just say “Hello!” Ken’s Country Market-Deli-Bakery is always ready to serve you.</p>
+			<p><b>Ken Gillette, Owner</b></p>
+		</div>
+
+		<div class="aboutnew2">
+			<img class="about-portrait" src="/images/Ken-Gillette-Owner.png" alt="Ken Gillette - Owner">
+			<p>Welcome to Ken’s Country Market-Deli-Bakery! We are a boutique market offering top-quality foods, featuring Amish-made meat, 
+				cheese and jarred goods, plus organic shade-grown coffee and more. Look at our labels – it’s what you DON’T see that makes them naturally good!</p>
+			<p>We’re open Monday through Saturday, 6 am to 6 pm. Our gift shop offers gift baskets full of Amish goodness and fun. Our deli offers Amish meat, 
+				cheese, bacon and butter; Eisenberg hot dogs, brats and Polish sausage;  homemade Cincinnati chili, and more. Our bakery offers authentic kosher
+				New York bagels, and donuts, both fresh daily;  plus apple fritters, scones, pies, cakes and more! You’ll always find something delectable at Ken’s
+				Country Market.</p>
+			<p>Having a party? Planning a meeting? Just call and place your order. We’ll deliver it right to you – or you can zip in to our convenient Curbside
+				Pickup and we’ll bring it out to your car.</p>
+			<p>I want you to feel that this is your kind place and that it helps make your day a little bit better. Today, I’m lucky to have people working at
+				Ken’s Country Market-Deli-Bakery who feel the same way. We’ve been fortunate to attract special people as customers; it’s my hope you’re one of them
+				– and if you’re not, that you will be soon.</p>
+			<p>Stop by and enjoy fresh coffee with a bagel or donut, buy Amish meats and cheeses by the pound, browse our selection of Health and Amish products
+				and gift shop, or just say “Hello!” Ken’s Country Market-Deli-Bakery is always ready to serve you.</p>
+			<p><b>Ken Gillette, Owner</b></p>
+		</div>
+	<?}?>
+
+	</div>
+<?}?>
+
+<? if($page == "contact") { //************************* ?>
+	<div class="account-outer">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<div class="tandc">
+			<br><br>
+			<?=$contact_name_whole?><br><?=$contact_address?><br><?=$contact_city?><br><br>
+			<span>Phone:</span> <a href="tel:+1-<?=$contact_phone?>"><?=$contact_phone?></a><br>
+			<span>Email:</span> <script>emailLink("","<?=$contact_asun?>","<?=$contact_ashn?>","<?=$contact_asex?>")</script><br>
+			<br><br><br><br>
+		</div>
+	</div>
+<?}?>
+
+<? if($page == "terms") { //************************* ?>
+	<div class="account-outer">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<? include "terms-and-conditions.php"; ?>
+	</div>
+<?}?>
+
+<? if($page == "privacy") { //************************* ?>
+	<div class="account-outer">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<? include "privacy-policy.php"; ?>
+	</div>
+<?}?>
+
+<? if($page == "sldigest") { //************************* ?>
+	<div class="account-outer" style="padding-left:0;padding-right:0;">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<br><br>
+		<? $sldigest = array(
+			"2009"=>array("14","SepOct-2020","September/October 2020"),
+			"2007"=>array("12","JulAug-2020","July/August 2020"),
+			"1905"=>array("24","MayJun-2019","May/June 2019"),
+			"1811"=>array("24","NovDec-2018","November/December 2018"),
+			"1809"=>array("24","SepOct-2018","September/October 2018"),
+			"1807"=>array("24","JulAug-2018","July/August 2018"),
+			"1805"=>array("32",   "May-2018","May/June 2018"),
+			"1804"=>array("32",   "Apr-2018","April 2018"),
+			"1803"=>array("32",   "Mar-2018","March 2018"),
+			"1711"=>array("32",   "Nov-2017","November 2017"),
+			"0810"=>array("32",   "Oct-2008","October 2008"),
+			"0808"=>array("32",   "Aug-2008","August 2008"),
+			"0807"=>array("32",   "Jul-2008","July 2008"),
+			"0806"=>array("32",   "Jun-2008","June 2008"),
+		);
+		foreach($sldigest as $dir => $data) {?>
+			<div class="sldigest"
+				onmouseover="var inners = this.getElementsByClassName('sldinner'); inners[0].style.opacity = inners[1].style.opacity = inners[2].style.opacity = 1;"
+				onmouseout="var inners = this.getElementsByClassName('sldinner'); inners[0].style.opacity = inners[1].style.opacity = inners[2].style.opacity = 0;">
+				<div class="sldinner"><?=$data[2]?></div>
+				<a href="/flipbook/<?=$dir?>/<?=$data[0]?>/">
+					<img src="/images/sldigest/Senior-Lifestyle-Digest--<?=$data[1]?>.jpg" alt="Senior Lifestyle Digest - <?=$data[1]?>"></a>
+				<a class="sldinner" href="/flipbook/<?=$dir?>/<?=$data[0]?>/">FLIPBOOK</a>&nbsp;&nbsp;&nbsp;&nbsp;
+				<a class="sldinner" href="/images/sldigest/Senior-Lifestyle-Digest--<?=$data[1]?>.pdf" target="_blank">DOWNLOAD</a>
+			</div>
+		<?}?>
+	</div>
+	<script>
+		var outer = eC0('account-outer'), ow = outer.offsetWidth;
+		var inner = eC("sldigest"), iw = inner[0].offsetWidth;
+		if(ow/iw > 3) pix = 0; else if(ow/iw > 2) pix = (ow - 2*iw)/3; else if(ow/iw > 1) pix = (ow - 1*iw)/2;
+		for(var i=0,len=inner.length;i<len;i++) inner[i].style.marginLeft = pix+"px";
+	</script>
+<?}?>
+
+<?if($page == "deli-bakery") {	//*************
+	
+	if($_GET['sel'] == "buy") { /* deli-bakery buy page */
+
+		$sql = mysqli_query($dbc,"SELECT * FROM products WHERE prodlink = '".$_GET['pid']."'"); $prow = mysqli_fetch_assoc($sql);
+			$l = $prow['collection']; $c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink']; $s = $prow['buynum'];
+			$e = $prow['price']; $y = $prow['inventory'];	$t = $prow['title']; $b = $prow['brtitle']; $m = $prow['image'];?>
+		<div class="breadcrumbs">
+			<div class="breadcrumbs-outer">
+				<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+				<div class="breadcrumbs-bull">&#8227;</div>
+				<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="<?=prods_url($c)?>/"><?=strtoupper($pageTitles[prods_page($c)])?></a></div>
+				<div class="breadcrumbs-bull">&#8227;</div>
+				<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="<?=prod_url($c)?>/<?=$d?>/"><?=strtoupper($l)?></a></div>
+				<div class="breadcrumbs-bull">&#8227;</div>
+				<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="<?=prod_url($c)?>/<?=$k?>/"><?=strtoupper($s)?></a></div>
+				<div class="breadcrumbs-bull">&#8227;</div>
+				<div class="breadcrumbs-item">BUY <?=strtoupper($t)?></div>
+			</div>
+		</div>
+		<!--img class="progress" src="/images/progress.gif"-->
+		<div class="prod-outer">
+			<div class="page-header"><div>Buy <?=$t?></div>	</div>
+			<div class="prod-left">
+				<div class="prod-image">
+					<img src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>">
+				</div>
+			</div>
+			<div class="prod-right">
+				<div class="prod-info">
+					<div class="description"><?
+						$ni = 0; if($prow['weight']) $ni++; if($prow['prodcode']) $ni++;
+						if($prow['weight']) { echo "Weight:&nbsp;&nbsp;".$prow['weight'];	 $ni--; if($ni>0) echo "<br>"; }
+						if($prow['prodcode']) { echo "SKU:&nbsp;&nbsp;".$prow['prodcode']; $ni--; if($ni>0) echo "<br>"; }
+					?></div>
+				</div>
+
+				<div class="prod-select">
+					<div class="psrow">
+						<div class="title">SELECT QUANTITY</div>
+						<div class="changeint">
+							<div class="change nosel" onclick="productQuant(quantity('-','','value'),<?=$e?>)">-</div>
+								<textarea id="value" class="value" oninput="productQuant(quantity('c','<?=$y?>','value'),<?=$e?>)">1</textarea>
+							<div class="change nosel" onclick="productQuant(quantity('+','<?=$y?>','value'),<?=$e?>)">+</div>
+							<?=inventory_popup()?>
+						</div>
+						<!--div class="rolls">Please note based on the yardage purchased the goods may ship on more than one roll. 
+						Please contact our office at <script>emailLink("rolls-email","<?=$contact_asun?>","<?=$contact_ashn?>","<?=$contact_asex?>")</script>
+							should you have any questions.</div-->
+					</div>
+				</div>
+
+				<div class="prod-action">
+					<div class="total total-disable" id="prod-total"></div><a class="addbag addbag-disable"
+						onclick="shopbagAppend('<?=$prow['category']?>','<?=$prow['prodcode']?>',quantity('c','','value'),'','p'); return shopbagSend();">
+							ADD TO CART</a>
+				</div>
+				<script>productQuant(quantity('1','','value'),<?=$prow['price']?>)</script>
+			</div>
+		</div>
+
+	<?} else {
+
+		if(!isset($_GET['sel'])) {  /* deli-bakery category page */ ?>
+
+			<div class="breadcrumbs">
+				<div class="breadcrumbs-outer">
+					<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+					<div class="breadcrumbs-bull">&#8227;</div>
+					<div class="breadcrumbs-item"><?=strtoupper($pageTitles[$page])?></div>
+				</div>
+			</div>
+			<!--img class="progress" src="/images/progress.gif"-->
+			<div class="h-category-outer">
+				<div class="page-header"><div><?=strtoupper($pageTitles[$page])?></div></div>
+				<div class="h-category-list lgscreen">
+					<div class="h-cluster-item">
+					    <div class="h-cluster-square">
+								<script>
+									function clusterImageEnter(e) { if(e.dataset.imageheight==0) e.dataset.imageheight=e.offsetHeight;
+										e.style.height = (e.dataset.imageheight*1.1)+"px"; if(e.nextElementSibling) e.nextElementSibling.style.opacity = 1; }
+									function clusterImageLeave(e) {
+										e.style.height = e.dataset.imageheight+"px"; if(e.nextElementSibling) e.nextElementSibling.style.opacity = 0; }
+								</script>
+																		<a href="https://kensamishmarket.com/product/kens-best-aloe-vera-300-mg-120-capsules/">
+											<img class="cluster kens-best-aloe-vera" src="/images/sld-products/cluster/Kens-Best-Aloe-Vera.png" alt="Ken's Best Aloe Vera" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="192" style="height: 192px;">
+											<div class="cluster-info kens-best-aloe-vera" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>Aloe Vera...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/kens-best-sportarub/">
+											<img class="cluster kens-best-sportarub" src="/images/sld-products/cluster/Kens-Best-SportaRub.png" alt="Ken's Best SportaRub" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="300" style="height: 300px;">
+											<div class="cluster-info kens-best-sportarub" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>SportaRub...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/roll-on-sportarub/">
+											<img class="cluster kens-best-sportarub-roll-on" src="/images/sld-products/cluster/Kens-Best-SportaRub-Roll-On.png" alt="Ken's Best SportaRub Roll-On" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="240" style="height: 240px;">
+											<div class="cluster-info kens-best-sportarub-roll-on" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>SportaRub<br>Roll-On...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/kens-best-new-eyes/">
+											<img class="cluster kens-best-new-eyes" src="/images/sld-products/cluster/Kens-Best-New-Eyes.png" alt="Ken's Best New Eyes" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="192" style="height: 192px;">
+											<div class="cluster-info kens-best-new-eyes" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>New Eyes...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/kens-best-nopal/">
+											<img class="cluster kens-best-nopal" src="/images/sld-products/cluster/Kens-Best-Nopal.png" alt="Ken's Best Nopal" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="192" style="height: 192px;">
+											<div class="cluster-info kens-best-nopal" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>Nopal...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/catherines-choice-anodin-plus-120-capsules/">
+											<img class="cluster catherines-choice-anodin-plus" src="/images/sld-products/cluster/Catherines-Choice-Anodin-Plus.png" alt="Catherine's Choice Anodin Plus" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="192" style="height: 192px;">
+											<div class="cluster-info catherines-choice-anodin-plus" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Catherine's Choice<br>Anodin Plus...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/catherines-choice-aloe-vera-200-mg-120-capsules/">
+											<img class="cluster catherines-choice-aloe-vera" src="/images/sld-products/cluster/Catherines-Choice-Aloe-Vera.png" alt="Catherine's Choice Aloe Vera" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="192" style="height: 192px;">
+											<div class="cluster-info catherines-choice-aloe-vera" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Catherine's Choice<br>Aloe Vera...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/kens-best-aloe-vera-1st-aid-gel/">
+											<img class="cluster kens-best-aloe-vera-1st-aid-gel" src="/images/sld-products/cluster/Kens-Best-Aloe-Vera-1st-Aid-Gel.png" alt="Ken's Best Aloe Vera 1st Aid Gel" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="300" style="height: 300px;">
+											<div class="cluster-info kens-best-aloe-vera-1st-aid-gel" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>Aloe Vera<br>1stAid Gel...</div>
+										</a>
+																</div>
+					</div>
+				</div>
+				
+				<div class="h-category-list smscreen">
+														<div class="h-category-item">
+									<div class="h-category-square"><a href="https://kensamishmarket.com/product/kens-best-aloe-vera-300-mg-120-capsules/"><img style="height:70%" src="/images/sld-products/Kens-Best-Aloe-Vera.jpg" alt="Ken's Best Aloe Vera"></a></div>
+									<div class="h-category-label lg"><a href="https://kensamishmarket.com/product/kens-best-aloe-vera-300-mg-120-capsules"><div class="h-category-button">Ken's Best<br>Aloe Vera</div></a>
+									</div>
+								</div>
+														<div class="h-category-item">
+									<div class="h-category-square"><a href="https://kensamishmarket.com/product/kens-best-sportarub/"><img style="height:95%" src="/images/sld-products/Kens-Best-SportaRub.jpg" alt="Ken's Best SportaRub"></a></div>
+									<div class="h-category-label lg"><a href="https://kensamishmarket.com/product/kens-best-sportarub/"><div class="h-category-button">Ken's Best<br>SportaRub</div></a>
+									</div>
+								</div>
+														<div class="h-category-item">
+									<div class="h-category-square"><a href="https://kensamishmarket.com/product/roll-on-sportarub/"><img style="height:75%" src="/images/sld-products/Kens-Best-SportaRub-Roll-On.jpg" alt="Ken's Best SportaRub Roll-On"></a></div>
+									<div class="h-category-label lg"><a href="https://kensamishmarket.com/product/roll-on-sportarub/"><div class="h-category-button">Ken's Best<br>SportaRub Roll-On</div></a>
+									</div>
+								</div>
+														<div class="h-category-item">
+									<div class="h-category-square"><a href="https://kensamishmarket.com/product/kens-best-new-eyes/"><img style="height:70%" src="/images/sld-products/Kens-Best-New-Eyes.jpg" alt="Ken's Best New Eyes"></a></div>
+									<div class="h-category-label lg"><a href="https://kensamishmarket.com/product/kens-best-new-eyes/"><div class="h-category-button">Ken's Best<br>New Eyes</div></a>
+									</div>
+								</div>
+														<div class="h-category-item">
+									<div class="h-category-square"><a href="https://kensamishmarket.com/product/kens-best-nopal/"><img style="height:70%" src="/images/sld-products/Kens-Best-Nopal.jpg" alt="Ken's Best Nopal"></a></div>
+									<div class="h-category-label lg"><a href="https://kensamishmarket.com/product/kens-best-nopal/"><div class="h-category-button">Ken's Best<br>Nopal</div></a>
+									</div>
+								</div>
+														<div class="h-category-item">
+									<div class="h-category-square"><a href="https://kensamishmarket.com/product/catherines-choice-anodin-plus-120-capsules/"><img style="height:70%" src="/images/sld-products/Catherines-Choice-Anodin-Plus.jpg" alt="Catherine's Choice Anodin Plus"></a></div>
+									<div class="h-category-label lg"><a href="https://kensamishmarket.com/product/catherines-choice-anodin-plus-120-capsules/"><div class="h-category-button">Catherine's Choice<br>Anodin Plus</div></a>
+									</div>
+								</div>
+														<div class="h-category-item">
+									<div class="h-category-square"><a href="https://kensamishmarket.com/product/catherines-choice-aloe-vera-200-mg-120-capsules/"><img style="height:70%" src="/images/sld-products/Catherines-Choice-Aloe-Vera.jpg" alt="Catherine's Choice Aloe Vera"></a></div>
+									<div class="h-category-label lg"><a href="https://kensamishmarket.com/product/catherines-choice-aloe-vera-200-mg-120-capsules/"><div class="h-category-button">Catherine's Choice<br>Aloe Vera</div></a>
+									</div>
+								</div>
+														<div class="h-category-item">
+									<div class="h-category-square"><a href="https://kensamishmarket.com/product/kens-best-aloe-vera-1st-aid-gel/"><img style="height:100%" src="/images/sld-products/Kens-Best-Aloe-Vera-1st-Aid-Gel.jpg" alt="Ken's Best Aloe Vera 1st Aid Gel"></a></div>
+									<div class="h-category-label lg"><a href="https://kensamishmarket.com/product/kens-best-aloe-vera-1st-aid-gel/"><div class="h-category-button">Ken's Best<br>Aloe Vera 1st Aid Gel</div></a>
+									</div>
+								</div>
+											</div>
+				
+			</div>
+
+		<?} else if(strinstr("grid",$_GET['sel'])) {  /* deli-bakery grids */ ?>
+
+			<div class="breadcrumbs">
+				<div class="breadcrumbs-outer">
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><?=strtoupper($pageTitles[$page])?></div>
+				</div>
+			</div>
+			<? $grid = "grid-cluster"; if(strinstr("grid",$_GET['sel'])) $grid = $_GET['sel'];?>
+			<?if($grid == "grid-cluster") {?>
+				<!--img class="progress" src="/images/progress.gif"-->
+				<div class="h-category-outer">
+					<div class="page-header"><div><?=strtoupper($pageTitles[$page])?></div></div>
+					<?$col = "old-florida-coffee-roasters"; if(!isset($_GET['pid']) || $_GET['pid'] == $col) {?>
+						<b><?=mysqli_fetch_assoc(mysqli_query($dbc,"SELECT collection FROM products WHERE category = '".$page."' AND colleclink = '".$col."'"))['collection'];?></b>
+						<div class="h-category-list lgscreen">
+							<div class="h-cluster-item">
+								<div class="h-cluster-item">
+					    <div class="h-cluster-square">
+								<script>
+									function clusterImageEnter(e) { if(e.dataset.imageheight==0) e.dataset.imageheight=e.offsetHeight;
+										e.style.height = (e.dataset.imageheight*1.1)+"px"; if(e.nextElementSibling) e.nextElementSibling.style.opacity = 1; }
+									function clusterImageLeave(e) {
+										e.style.height = e.dataset.imageheight+"px"; if(e.nextElementSibling) e.nextElementSibling.style.opacity = 0; }
+								</script>
+																		<a href="https://kensamishmarket.com/product/kens-best-aloe-vera-300-mg-120-capsules/">
+											<img class="cluster kens-best-aloe-vera" src="/images/sld-products/cluster/Kens-Best-Aloe-Vera.png" alt="Ken's Best Aloe Vera" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="192" style="height: 192px;">
+											<div class="cluster-info kens-best-aloe-vera" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>Aloe Vera...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/kens-best-sportarub/">
+											<img class="cluster kens-best-sportarub" src="/images/sld-products/cluster/Kens-Best-SportaRub.png" alt="Ken's Best SportaRub" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="300" style="height: 300px;">
+											<div class="cluster-info kens-best-sportarub" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>SportaRub...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/roll-on-sportarub/">
+											<img class="cluster kens-best-sportarub-roll-on" src="/images/sld-products/cluster/Kens-Best-SportaRub-Roll-On.png" alt="Ken's Best SportaRub Roll-On" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="240" style="height: 240px;">
+											<div class="cluster-info kens-best-sportarub-roll-on" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>SportaRub<br>Roll-On...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/kens-best-new-eyes/">
+											<img class="cluster kens-best-new-eyes" src="/images/sld-products/cluster/Kens-Best-New-Eyes.png" alt="Ken's Best New Eyes" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="192" style="height: 192px;">
+											<div class="cluster-info kens-best-new-eyes" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>New Eyes...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/kens-best-nopal/">
+											<img class="cluster kens-best-nopal" src="/images/sld-products/cluster/Kens-Best-Nopal.png" alt="Ken's Best Nopal" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="192" style="height: 192px;">
+											<div class="cluster-info kens-best-nopal" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>Nopal...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/catherines-choice-anodin-plus-120-capsules/">
+											<img class="cluster catherines-choice-anodin-plus" src="/images/sld-products/cluster/Catherines-Choice-Anodin-Plus.png" alt="Catherine's Choice Anodin Plus" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="192" style="height: 192px;">
+											<div class="cluster-info catherines-choice-anodin-plus" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Catherine's Choice<br>Anodin Plus...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/catherines-choice-aloe-vera-200-mg-120-capsules/">
+											<img class="cluster catherines-choice-aloe-vera" src="/images/sld-products/cluster/Catherines-Choice-Aloe-Vera.png" alt="Catherine's Choice Aloe Vera" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="192" style="height: 192px;">
+											<div class="cluster-info catherines-choice-aloe-vera" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Catherine's Choice<br>Aloe Vera...</div>
+										</a>
+																			<a href="https://kensamishmarket.com/product/kens-best-aloe-vera-1st-aid-gel/">
+											<img class="cluster kens-best-aloe-vera-1st-aid-gel" src="/images/sld-products/cluster/Kens-Best-Aloe-Vera-1st-Aid-Gel.png" alt="Ken's Best Aloe Vera 1st Aid Gel" onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="300" style="height: 300px;">
+											<div class="cluster-info kens-best-aloe-vera-1st-aid-gel" onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;" style="opacity: 0;">Learn about<br>Ken's Best<br>Aloe Vera<br>1stAid Gel...</div>
+										</a>
+																</div>
+					</div>
+							</div>
+						</div>
+						<div class="h-category-list smscreen">
+							<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+								while($prow = mysqli_fetch_assoc($sql)) {
+									$c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+									$m = $prow['image']; $h = $prow['ihsize']; $s = $prow['buynum'];?>
+									<div class="h-category-item">
+										<div class="h-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+										<div class="h-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="h-category-button"><?=$s?></div></a>
+										</div>
+									</div>
+							<?}?>
+						</div>
+					<?}?>
+					<?$col = "bunker-hill-cheese"; if(!isset($_GET['pid']) || $_GET['pid'] == $col) {?>
+						<b><?=mysqli_fetch_assoc(mysqli_query($dbc,"SELECT collection FROM products WHERE category = '".$page."' AND colleclink = '".$col."'"))['collection'];?></b>
+						<div class="h-category-list lgscreen">
+							<div class="h-cluster-item">
+								<div class="h-cluster-square <?=$col?>">
+									<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+										while($prow = mysqli_fetch_assoc($sql)) { 
+											$c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+											$m = $prow['image']; $v = $prow['brvariety'];?>
+											<a href="<?=prod_url($c)?>/<?=$k?>/">
+												<img class="cluster <?=$k?>" src="/images/<?=$c.'/cluster/'.str_replace('.jpg','.png',$m)?>" alt="<?=$t?>">
+												<div class="cluster <?=$k?>"><?=$v?></div>
+											</a>
+									<?}?>
+								</div>
+							</div>
+						</div>
+						<div class="h-category-list smscreen">
+							<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+								while($prow = mysqli_fetch_assoc($sql)) { 
+									$c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+									$m = $prow['image']; $h = $prow['ihsize']; $s = $prow['buynum'];?>
+									<div class="h-category-item">
+										<div class="h-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+										<div class="h-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="h-category-button"><?=$s?></div></a>
+										</div>
+									</div>
+							<?}?>
+						</div>
+					<?}?>
+					<?$col = "bakery-desserts"; if(!isset($_GET['pid']) || $_GET['pid'] == $col) {?>
+						<b><?=mysqli_fetch_assoc(mysqli_query($dbc,"SELECT collection FROM products WHERE category = '".$page."' AND colleclink = '".$col."'"))['collection'];?></b>
+						<div class="h-category-list lgscreen">
+							<div class="h-cluster-item">
+								<div class="h-cluster-square <?=$col?>">
+									<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+										while($prow = mysqli_fetch_assoc($sql)) { 
+											$c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+											$m = $prow['image']; $v = $prow['brvariety'];?>
+											<a href="<?=prod_url($c)?>/<?=$k?>/">
+												<img class="cluster <?=$k?>" src="/images/<?=$c.'/cluster/'.str_replace('.jpg','.png',$m)?>" alt="<?=$t?>">
+												<div class="cluster <?=$k?>"><?=$v?></div>
+											</a>
+									<?}?>
+								</div>
+							</div>
+						</div>
+						<div class="h-category-list smscreen">
+							<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+								while($prow = mysqli_fetch_assoc($sql)) { 
+									$c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+									$m = $prow['image']; $h = $prow['ihsize']; $s = $prow['buynum'];?>
+									<div class="h-category-item">
+										<div class="h-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+										<div class="h-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="h-category-button"><?=$s?></div></a>
+										</div>
+									</div>
+							<?}?>
+						</div>
+					<?}?>
+				</div>
+			<?} else if($grid == "grid-2x4") {?>
+				<!--img class="progress" src="/images/progress.gif"-->
+				<div class="h-category-outer">
+					<div class="page-header"><div><?=strtoupper($pageTitles[$page])?></div>	</div>
+					<div class="h-category-list">
+						<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' ORDER BY id");
+							while($prow = mysqli_fetch_assoc($sql)) { 
+								$c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle']; $m = $prow['image']; $h = $prow['ihsize'];?>
+							<div class="h-category-item">
+								<div class="h-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+								<div class="h-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="h-category-button"><?=subcol_break($t)?></div></a>
+								</div>
+							</div>
+						<?}?>
+					</div>
+				</div>
+			<?} else if($grid == "grid-8x1") {?>
+				<div class="v-category-outer">
+					<div class="page-header"><div><?=strtoupper($pageTitles[$page])?><!--br><small id="prodcode">No. <?=$prow['prodcode']?></small--></div>	</div>
+					<div class="v-category-list">
+						<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' ORDER BY id");
+							while($prow = mysqli_fetch_assoc($sql)) {
+								$c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle']; $m = $prow['image'];?>
+							<div class="v-category-item">
+								<div class="v-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+								<div class="v-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="v-category-button"><?=$t?></div></a>
+								</div>
+							</div>
+						<?}?>
+					</div>
+				</div>
+			<?}?>
+
+		<?} else if(is_colleclink($_GET['sel'],$page)) {  /* deli-bakery collection cluster page */ ?>
+
+			<?$col = "old-florida-coffee-roasters"; if($_GET['sel'] == $col) {
+				$prow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT collection FROM products WHERE category = '".$page."' AND colleclink = '".$col."'"));
+				$l = $prow['collection']; $c = $prow['category']; $d = $prow['colleclink'];?>
+				<div class="breadcrumbs">
+					<div class="breadcrumbs-outer">
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/<?=$page?>/"><?=strtoupper($pageTitles[$page])?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><?=strtoupper($l)?></div>
+					</div>
+				</div>
+				<!--img class="progress" src="/images/progress.gif"-->
+				<img class="cluster-background lgscreen"	src="/images/Shade-Grown-Coffee-Field.jpg" alt="Shade-Grown Coffee Field">
+				<div class="h-category-outer">
+					<div class="page-header"><div><?=$prow['collection']?></div></div>
+					<div class="h-category-list lgscreen">
+						<div class="h-cluster-item">
+							<div class="h-cluster-square <?=$col?>">
+								<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+									while($prow = mysqli_fetch_assoc($sql)) { 
+										$c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+										$m = $prow['image']; $v = $prow['brvariety'];?>
+										<a href="<?=prod_url($c)?>/<?=$k?>/">
+											<img class="cluster <?=$k?>"	src="/images/<?=$c.'/cluster/'.str_replace('.jpg','.png',$m)?>" alt="<?=$t?>">
+											<div class="cluster <?=$k?>"><?=$v?></div>
+										</a>
+								<?}?>
+							</div>
+						</div>
+					</div>
+					<div class="h-category-list smscreen">
+						<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+							while($prow = mysqli_fetch_assoc($sql)) {
+								$c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+								$m = $prow['image']; $h = $prow['ihsize']; $s = $prow['buynum'];?>
+								<div class="h-category-item">
+									<div class="h-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+									<div class="h-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="h-category-button"><?=$s?></div></a>
+									</div>
+								</div>
+						<?}?>
+					</div>
+				</div>
+			<?}?>
+			<?$col = "bunker-hill-cheese"; if($_GET['sel'] == $col) {
+				$prow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT collection FROM products WHERE category = '".$page."' AND colleclink = '".$col."'"));
+				$l = $prow['collection']; $c = $prow['category']; $d = $prow['colleclink'];?>
+				<div class="breadcrumbs">
+					<div class="breadcrumbs-outer">
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/<?=$page?>/"><?=strtoupper($pageTitles[$page])?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><?=strtoupper($l)?></div>
+					</div>
+				</div>
+				<!--img class="progress" src="/images/progress.gif"-->
+				<img class="cluster-background lgscreen"	src="/images/Dairy-Cow-Pasture.jpg" alt="Dairy Cow Pasture">
+				<div class="h-category-outer">
+					<div class="page-header"><div><?=$prow['collection']?></div></div>
+					<div class="h-category-list lgscreen">
+						<div class="h-cluster-item">
+							<div class="h-cluster-square <?=$col?>">
+								<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+									while($prow = mysqli_fetch_assoc($sql)) { 
+										$c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+										$m = $prow['image']; $v = $prow['brvariety'];?>
+										<a href="<?=prod_url($c)?>/<?=$k?>/">
+											<img class="cluster <?=$k?>"	src="/images/<?=$c.'/cluster/'.str_replace('.jpg','.png',$m)?>" alt="<?=$t?>">
+											<div class="cluster <?=$k?>"><?=$v?></div>
+										</a>
+								<?}?>
+							</div>
+						</div>
+					</div>
+					<div class="h-category-list smscreen">
+						<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+							while($prow = mysqli_fetch_assoc($sql)) { 
+								$c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+								$m = $prow['image']; $h = $prow['ihsize']; $s = $prow['buynum'];?>
+								<div class="h-category-item">
+									<div class="h-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+									<div class="h-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="h-category-button"><?=$s?></div></a>
+									</div>
+								</div>
+						<?}?>
+					</div>
+				</div>
+			<?}?>
+			<?$col = "bakery-desserts"; if($_GET['sel'] == $col) {
+				$prow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT collection FROM products WHERE category = '".$page."' AND colleclink = '".$col."'"));
+				$l = $prow['collection']; $c = $prow['category']; $d = $prow['colleclink'];?>
+				<div class="breadcrumbs">
+					<div class="breadcrumbs-outer">
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/<?=$page?>/"><?=strtoupper($pageTitles[$page])?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><?=strtoupper($l)?></div>
+					</div>
+				</div>
+				<!--img class="progress" src="/images/progress.gif"-->
+				<div class="h-category-outer">
+					<div class="page-header"><div><?=$prow['collection']?></div></div>
+					<div class="h-category-list lgscreen">
+						<div class="h-cluster-item">
+							<div class="h-cluster-square <?=$col?>">
+								<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+									while($prow = mysqli_fetch_assoc($sql)) { 
+										$c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+										$m = $prow['image']; $v = $prow['brvariety'];?>
+										<a href="<?=prod_url($c)?>/<?=$k?>/">
+											<img class="cluster <?=$k?>" src="/images/<?=$c.'/cluster/'.str_replace('.jpg','.png',$m)?>" alt="<?=$t?>">
+											<div class="cluster <?=$k?>"><?=$v?></div>
+										</a>
+								<?}?>
+							</div>
+						</div>
+					</div>
+					<div class="h-category-list smscreen">
+						<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$col."' ORDER BY id");
+							while($prow = mysqli_fetch_assoc($sql)) { 
+								$c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle'];
+								$m = $prow['image']; $h = $prow['ihsize']; $s = $prow['buynum'];?>
+								<div class="h-category-item">
+									<div class="h-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+									<div class="h-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="h-category-button"><?=$s?></div></a>
+									</div>
+								</div>
+						<?}?>
+					</div>
+				</div>
+			<?}?>
+
+		<?} else if(isset($_GET['sel'])) { /* deli-bakery product page */
+
+			$sql = mysqli_query($dbc,"SELECT * FROM products WHERE prodlink = '".$_GET['sel']."'"); $prow = mysqli_fetch_assoc($sql);
+				$l = $prow['collection']; $c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink'];
+				$t = $prow['title']; $b = $prow['brtitle']; $m = $prow['image']; $s = $prow['buynum'];?>
+			<div class="breadcrumbs">
+				<div class="breadcrumbs-outer">
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="<?=prods_url($c)?>/"><?=strtoupper($pageTitles[prods_page($c)])?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="<?=prod_url($c)?>/<?=$d?>/"><?=strtoupper($l)?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><?=strtoupper($s)?></div>
+				</div>
+			</div>
+			<div class="prod-outer">
+				<div class="page-header"><div><?=$t?></div>	</div>
+				<div class="prod-left">
+					<div class="prod-image">
+						<img src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>">
+					</div>
+					<div class="prod-info">
+						<div class="description"><?
+							$ni = 0; if($prow['weight']) $ni++; if($prow['prodcode']) $ni++;
+							if($prow['weight']) { echo "Weight:&nbsp;&nbsp;".$prow['weight'];	 $ni--; if($ni>0) echo "<br>"; }
+							if($prow['prodcode']) { echo "SKU:&nbsp;&nbsp;".$prow['prodcode']; $ni--; if($ni>0) echo "<br>"; }
+						?></div>
+					</div>
+					<div class="prod-info">
+						<?if(inventory_have($prow)){?><a href="<?=prod_url($c)?>/buy/<?=$k?>/"><div class="v-category-button">Buy <?=$t?></div></a><?}
+						else{?><div class="v-category-button disable" style="position:relative">Buy <?=$t?>
+							<div style="position:absolute;width:100px;left:calc(50% - 50px);bottom:-20px;z-index:999;color:red">Out Of Stock</div></div><?}?>
+					</div>
+				</div>
+				<div class="prod-right">
+					<div class="prod-info">
+						<div class="description"><? if($prow['description']) echo $prow['description'];?></div>
+					</div>
+				</div>
+			</div>
+		<?}?>
+	<?}?>
+<?}?>
+
+<?if($page == "sld-products") {	//*************
+	
+	if($_GET['sel'] == "buy") {?>
+
+		<?if(strinstr("buy-",$_GET['pid'])) { /* sld products buy page */
+
+			$sql = mysqli_query($dbc,"SELECT * FROM products WHERE prodlink = '".$_GET['pid']."'"); $prow = mysqli_fetch_assoc($sql);
+				$l = $prow['collection']; $c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink']; $s = $prow['buynum'];
+				$t = $prow['title']; $m = $prow['image'];?>
+			<div class="breadcrumbs">
+				<div class="breadcrumbs-outer">
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="<?=prods_url($c)?>/"><?=strtoupper($pageTitles[prods_page($c)])?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="<?=prod_url($c)?>/<?=$d?>/"><?=strtoupper($l)?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="<?=prod_url($c)?>/buy/<?=$d?>/">BUY <?=strtoupper($l)?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><?=strtoupper($s)?></div>
+				</div>
+			</div>
+			<div class="prod-outer">
+				<div class="page-header"><div><?=$t?></div>	</div>
+				<div class="prod-left">
+					<div class="prod-image">
+						<img src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>">
+					</div>
+				</div>
+				<div class="prod-right">
+					<div class="prod-info">
+						<div class="description"><?
+							$ni = 0; if($prow['weight']) $ni++; if($prow['prodcode']) $ni++;
+							if($prow['weight']) { echo "Weight:&nbsp;&nbsp;".$prow['weight'];	 $ni--; if($ni>0) echo "<br>"; }
+							if($prow['prodcode']) { echo "SKU:&nbsp;&nbsp;".$prow['prodcode']; $ni--; if($ni>0) echo "<br>"; }
+						?></div>
+					</div>
+					<div class="prod-action">
+						<div class="total total-disable" id="prod-total"></div><a class="addbag addbag-disable"
+							onclick="shopbagAppend('<?=$c?>','<?=$prow['prodcode']?>',quantity('c','','value'),'','p'); return shopbagSend();">
+								ADD TO CART</a>
+					</div>
+					<script>productQuant(quantity('1','','value'),<?=$prow['price']?>)</script>
+				</div>
+			</div>
+
+		<?} else { /* sld products packs shelf */ ?>
+			<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$_GET['pid']."' AND buynum = '' ORDER BY id");
+				$prow = mysqli_fetch_assoc($sql); $k = $prow['prodlink']; $t = $prow['title'];?>
+			<div class="breadcrumbs">
+				<div class="breadcrumbs-outer">
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/<?=$page?>/"><?=strtoupper($pageTitles[$page])?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/<?=$page?>/<?=$k?>/"><?=strtoupper($t)?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item">BUY <?=strtoupper($t)?></div>
+				</div>
+			</div>
+			<!--img class="progress" src="/images/progress.gif"-->
+			<div class="h-category-outer">
+				<div class="page-header"><div>Buy <?=$prow['title']?></div>	</div>
+				<div class="h-category-list">
+					<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND colleclink = '".$_GET['pid']."' AND buynum != '' ORDER BY id");
+						while($prow = mysqli_fetch_assoc($sql)) { 
+							$l = $prow['collection']; $c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink']; $s = $prow['buynum'];
+							$t = $prow['title']; $e = $prow['price']; $m = $prow['image']; $h = $prow['ihsize'];?>
+						<div class="h-category-item">
+							<?if(inventory_have($prow)){?>
+								<div class="h-category-square"><a href="<?=prod_url($c)?>/buy/<?=$k?>/">
+									<img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>">
+								</a></div>
+								<div class="h-category-label lg"><a href="<?=prod_url($c)?>/buy/<?=$k?>/">
+									<div class="h-category-button lg">
+										<?=$s."<br>".subcol_break($l)."<br><p style='padding:0;margin:14px 0 0'>$".$e."<br><small>($".perbottle($e,$s)." per bottle)</small></p>"?></div>
+								</a></div>
+							<?}else{?>
+								<div class="h-category-square">
+									<img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>">
+								</div>
+								<div class="h-category-label lg">
+									<div class="h-category-button lg disable" style="position:relative">
+										<?=$s."<br>".subcol_break($l)."<br><br>$".$e."<br><small>($".perbottle($e,$s)." per bottle)</small>"?>
+										<div style="position:absolute;width:100px;left:calc(50% - 50px);bottom:-20px;z-index:999;color:red">Out Of Stock</div>
+									</div>
+								</div>
+							<?}?>
+						</div>
+					<?}?>
+				</div>
+			</div>
+		<?}?>
+	<?} else {?>
+
+		<?if(isset($_GET['sel']) && !strinstr("grid",$_GET['sel'])) { /* sld products product page */
+
+			$sql = mysqli_query($dbc,"SELECT * FROM products WHERE prodlink = '".$_GET['sel']."'"); $prow = mysqli_fetch_assoc($sql);
+				$l = $prow['collection']; $c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink'];
+				$t = $prow['title']; $m = $prow['image'];?>
+			<div class="breadcrumbs">
+				<div class="breadcrumbs-outer">
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="<?=prods_url($c)?>/"><?=strtoupper($pageTitles[prods_page($c)])?></a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><?=strtoupper($l)?></div>
+				</div>
+			</div>
+			<div class="prod-outer">
+				<div class="page-header"><div><?=$t?></div>	</div>
+				<?if($prow['prodlink']=="kens-best-aloe-vera" || $prow['prodlink']=="catherines-choice-aloe-vera") {?>
+					<div class="aloe-feature">
+						<div class="upper left">From this...<br><img src="/images/features/Aloe-Plant-Flowering.jpg" alt="Aloe Plant Flowering"></div>
+						<!-- <div class="upper left">To this...<br><img src="/images/features/Aloe-Juice-Leaf-To-Spoon.jpg" alt="Aloe Juice Leaf To Spoon"></div> -->
+						<div class="upper right">To this...<br><img src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></div>
+					</div>
+				<?} else if($prow['prodlink']=="kens-best-nopal") {?>
+					<script>function featureTrans(id,init) {
+						var b = eId(id+'-box'), l = eId(id+'-button');
+						if(init) b.style.height=(b.offsetWidth*0.16)+'px';
+						else {
+							if(b.offsetHeight < 300) { b.style.height=(b.offsetWidth*1.325)+'px'; l.innerText='Close Article'; }
+							else { b.style.height=(b.offsetWidth*0.16)+'px'; l.innerText='Learn More'; }
+						}
+					}</script>
+					<div class="nopal-feature">
+						<div id="nopal-feature-box" onclick="featureTrans('nopal-feature')">
+							<img style="width:100%;" src="/images/features/Try-Amazing-Nopal.jpg" alt="Try Amazing Nopal"></div>
+						<a id="nopal-feature-button" onclick="featureTrans('nopal-feature')">Learn More</a>
+						<script>featureTrans('nopal-feature','init')</script>
+					</div>
+				<?}?>
+
+				<div class="prod-left">
+					<div class="prod-image"><img src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></div>
+					<div class="prod-info">
+						<div class="description"><?
+							$ni = 0; if($prow['weight']) $ni++; if($prow['prodcode']) $ni++;
+							if($prow['weight']) { echo "Weight:&nbsp;&nbsp;".$prow['weight'];	 $ni--; if($ni>0) echo "<br>"; }
+							if($prow['prodcode']) { echo "SKU:&nbsp;&nbsp;".$prow['prodcode']; $ni--; if($ni>0) echo "<br>"; }
+						?></div>
+					</div>
+					<div class="prod-info"><a href="<?=prod_url($c)?>/buy/<?=$k?>/"><div class="v-category-button">Buy <?=$t?></div></a></div>
+				</div>
+				<div class="prod-right">
+					<div class="prod-info"><div class="description"><? if($prow['description']) echo $prow['description'];?></div>	</div>
+				</div>
+			</div>
+
+		<?} else {  /* sld-products cluster page */ ?>
+
+			<div class="breadcrumbs">
+				<div class="breadcrumbs-outer">
+						<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+						<div class="breadcrumbs-bull">&#8227;</div>
+						<div class="breadcrumbs-item"><?=strtoupper($pageTitles[$page])?></div>
+				</div>
+			</div>
+			<? $grid = "grid-cluster"; if(strinstr("grid",$_GET['sel'])) $grid = $_GET['sel'];?>
+			<?if($grid == "grid-2x4") {?>
+				<!--img class="progress" src="/images/progress.gif"-->
+				<div class="h-category-outer">
+					<div class="page-header"><div><?=strtoupper($pageTitles[$page])?></div></div>
+					<div class="h-category-list">
+						<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND buynum = '' ORDER BY id");
+							while($prow = mysqli_fetch_assoc($sql)) { 
+								$c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $m = $prow['image']; $h = $prow['ihsize'];?>
+							<div class="h-category-item">
+								<div class="h-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+								<div class="h-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="h-category-button"><?=subcol_break($t)?></div></a>
+								</div>
+							</div>
+						<?}?>
+					</div>
+				</div>
+			<?} else if($grid == "grid-cluster") {?>
+				<!--img class="progress" src="/images/progress.gif"-->
+				<img class="cluster-background lgscreen"	src="/images/Aloe-Vera-Field.jpg" alt="Aloe Vera Field">
+				<div class="h-category-outer">
+					<div class="page-header">
+
+						<script>
+							function kenswelcome(val){
+								eId('kens-welcome-back').style.display = eId('kens-welcome-button').style.display = eId('kens-welcome-video').style.display = val; }
+							function kenswelcomeNote(target,event) { var note = cC(target.parentNode,'kens-welcome-note');
+								if(event==1) { note.style.display = "block"; note.innerHTML = "Click the icon to view." }
+								else note.style.display = "none"; }
+						</script>
+						<img class="kens-welcome-icon" src="/images/Kens-Welcome-Icon.png"
+							onmouseenter="kenswelcomeNote(this,1)"	onmouseleave="kenswelcomeNote(this,0)" onclick="kenswelcome('block'); documentElement.scrollIntoView();">
+						<div class="kens-welcome-note"></div>
+						<div id="kens-welcome-back"	onclick="kenswelcome('none')"></div>
+						<img id="kens-welcome-button" onclick="kenswelcome('none')" src="/images/close.png">
+						<video id="kens-welcome-video" src="/images/The-Power-of-Costa-Rican-Aloe.mp4" controls="controls" poster="/images/Ken-Gillette-Owner.png">
+							No video playback capabilities.
+						</video>
+
+						<div class="page-header-sld-products"><?=strtoupper($pageTitles[$page])?></div>
+
+						<script>
+							function itallstarted(val){
+								eId('it-all-started-back').style.display = eId('it-all-started-button').style.display = eId('it-all-started-image').style.display = val; }
+							function itallstartedNote(target,event) { var note = cC(target.parentNode,'it-all-started-note');
+								if(event==1) { note.style.display = "block"; note.innerHTML = "Click the icon to read." }
+								else note.style.display = "none"; }
+						</script>
+						<img class="it-all-started-icon" src="/images/features/warren-and-catherine/It-All-Started-With-Icon.png"
+							onmouseenter="itallstartedNote(this,1)"	onmouseleave="itallstartedNote(this,0)" onclick="itallstarted('block'); documentElement.scrollIntoView();">
+						<div class="it-all-started-note"></div>
+						<div id="it-all-started-back"	onclick="itallstarted('none')"></div>
+						<img id="it-all-started-button" onclick="itallstarted('none')" src="/images/close.png">
+						<img id="it-all-started-image" onclick="itallstarted('none')" src="/images/features/warren-and-catherine/It-All-Started-With.jpg">
+					</div>
+					<div class="h-category-list lgscreen">
+						<!--img style="position:absolute;z-index:-1;top:0;left:0;text-align:center;width:94%;margin:12% auto 0;opacity:0.5" src="/images/Aloe-Vera-Field.jpg"-->
+						<div class="h-cluster-item">
+							<div class="h-cluster-square">
+								<script>
+									function clusterImageEnter(e) { if(e.dataset.imageheight==0) e.dataset.imageheight=e.offsetHeight;
+										e.style.height = (e.dataset.imageheight*1.1)+"px"; if(e.nextElementSibling) e.nextElementSibling.style.opacity = 1; }
+									function clusterImageLeave(e) {
+										e.style.height = e.dataset.imageheight+"px"; if(e.nextElementSibling) e.nextElementSibling.style.opacity = 0; }
+								</script>
+								<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND buynum = '' ORDER BY id");
+									while($prow = mysqli_fetch_assoc($sql)) { 
+										$c = $prow['category']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title']; $b = $prow['brtitle']; $m = $prow['image'];?>
+										<a href="<?=prod_url($c)?>/<?=$k?>/">
+											<img class="cluster <?=$d?>" src="/images/<?=$c.'/cluster/'.str_replace('.jpg','.png',$m)?>" alt="<?=$t?>"
+												 onmouseenter="clusterImageEnter(this)" onmouseleave="clusterImageLeave(this)" data-imageheight="0">
+											<div class="cluster-info <?=$d?>"
+												 onmouseenter="this.style.opacity = 1;" onmouseleave="this.style.opacity = 0;">Learn about<br><?=$b?>...</div>
+										</a>
+									<?}?>
+							</div>
+						</div>
+					</div>
+					<div class="h-category-list smscreen">
+						<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND buynum = '' ORDER BY id");
+							while($prow = mysqli_fetch_assoc($sql)) {
+								$c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $m = $prow['image']; $h = $prow['ihsize'];?>
+								<div class="h-category-item">
+									<div class="h-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img style="<?=$h?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+									<div class="h-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="h-category-button"><?=subcol_break($t)?></div></a>
+									</div>
+								</div>
+						<?}?>
+					</div>
+				</div>
+			<?} else if($grid == "grid-8x1") {?>
+				<div class="v-category-outer">
+					<div class="page-header"><div><?=strtoupper($pageTitles[$page])?><!--br><small id="prodcode">No. <?=$prow['prodcode']?></small--></div>	</div>
+					<div class="v-category-list">
+						<?$sql = mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$page."' AND buynum = '' ORDER BY id");
+							while($prow = mysqli_fetch_assoc($sql)) { $c = $prow['category']; $k = $prow['prodlink']; $t = $prow['title']; $m = $prow['image'];?>
+							<div class="v-category-item">
+								<div class="v-category-square"><a href="<?=prod_url($c)?>/<?=$k?>/"><img src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a></div>
+								<div class="v-category-label lg"><a href="<?=prod_url($c)?>/<?=$k?>/"><div class="v-category-button"><?=$t?></div></a>
+								</div>
+							</div>
+						<?}?>
+					</div>
+				</div>
+			<?}?>
+		<?}?>
+	<?}?>
+<?}?>
+
+<?if($page == "search") { //************************* ?>
+	<div class="account-outer">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<div class="shbag-empty">Please enter an item name or number:</div>
+		<div class="shbag-empty">
+			<div class="searchp-outer">
+				<form action="/search/" method="post">
+					<input type="text" name="search" value="" class="searchp" id="searchp">
+					<input type="image" class="searchp" src="/images/search-big.png">
+					<script>eId('searchp').focus();</script>
+				</form>
+				</div>
+		</div>
+		<? if(isset($_POST['search']) && $_POST['search'] != "") {?>
+			<div class="shbag-empty">&nbsp;</div>
+			<div class="shbag-empty">Results for your search "<span class="grey"><?=$_POST['search'];?></span>"</div>
+			<div class="shbag-empty">&nbsp;</div>
+			<? $rarr = array();
+
+			// whole phrase
+			$s = addslashes($_POST['search']); $sql = mysqli_query($dbc,"SELECT * FROM products WHERE buynum != ''"
+				."AND (title LIKE '%".$s."%' OR category LIKE '%".$s."%' OR collection LIKE '%".$s."%')");
+			while($prow = mysqli_fetch_assoc($sql)) if(isset($rarr[$prow['id']])) $rarr[$prow['id']] += 1; else $rarr[$prow['id']] = 1;
+
+			// separate words
+			foreach(explode(" ",addslashes($_POST['search'])) as $r) {
+				$sql = mysqli_query($dbc,"SELECT * FROM products WHERE prodcode = '".$r."'");
+				if(mysqli_num_rows($sql)<1) $sql = mysqli_query($dbc,"SELECT * FROM products WHERE buynum != ''"
+					."AND (title LIKE '%".$r."%' OR category LIKE '%".$r."%' OR collection LIKE '%".$r."%')");
+				while($prow = mysqli_fetch_assoc($sql)) if(isset($rarr[$prow['id']])) $rarr[$prow['id']] += 1; else $rarr[$prow['id']] = 1;
+			}
+			?>
+			<table class="shbag-products">
+			<?if(count($rarr)==0) {?><br>No results.<?}
+			else {?><tr><th>ITEM</th><th></th><th>NUMBER</th></tr>
+				<? foreach($rarr as $id => $val) {
+					$prow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM products WHERE id = '".$id."'"));
+					$c = $prow['category']; $l = $prow['collection']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title'];
+					$r = $prow['prodcode']; $m = $prow['image']; $v = $prow['ivlsize'];?>
+					<tr class="line"> 
+						<td class="item">
+							<a class="image" href="<?=prod_url($c)?>/buy/<?=$k?>/">
+								<img style="<?=$v?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a>
+						</td>
+						<td class="item">
+							<div class="text">
+								<a href="<?=prod_url($c)?>/buy/<?=$k?>/"><?=$t?></a>
+								<br><small><a href="<?=prod_url($c)?>/<?=$d?>/"><?=$l?></a></small>
+								<br><small><a href="<?=prods_url($c)?>/"><?=$pageTitles[prods_page($c)]?></a></small>
+							</div>
+						</td>
+						<td class="pcode"><a href="<?=prod_url($c)?>/buy/<?=$k?>/"><?=$r?></a></td>
+					</tr>
+				<?}?>
+			<?}?>
+			</table>
+			<div class="shbag-empty">
+				<div class="shbag-nextact">
+					<a class="backto" href="/<?=($_SESSION['app_url']=='https://sldproducts.effexhost.com/')?'sld-products':'deli-bakery'?>/">CONTINUE SHOPPING</a>
+				</div>
+			</div>
+		<?}?>
+	</div>
+<?}?>
+
+<?if($page == "shopping-cart") { //************************* ?>
+
+	<? if($_GET['sel']=="update") {
+
+		$_SESSION['shoppingbag_ccode'] = $shoppingbag_ccode = explode(',', $_POST['cc']);
+		$_SESSION['shoppingbag_pcode'] = $shoppingbag_pcode = explode(',', $_POST['pc']);
+		$_SESSION['shoppingbag_quant'] = $shoppingbag_quant = explode(',', $_POST['qc']);
+		$_SESSION['shoppingbag_color'] = $shoppingbag_color = explode(',', $_POST['rc']);
+		$_SESSION['shoppingbag_forma'] = $shoppingbag_forma = explode(',', $_POST['fc']);
+	}?>
+	<div class="shbag-outer">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<? if(count($shoppingbag_pcode) == 0 || $shoppingbag_pcode[0] == "" || $shoppingbag_pcode[0] == "null") {?>
+			<div class="shbag-empty">Your cart is empty.</div><table class="shbag-products"></table><table class="shbag-totals"></table>
+			<div class="shbag-nextact">
+				<a class="backto" href="/<?=($_SESSION['app_url']=='https://sldproducts.effexhost.com/')?'sld-products':'deli-bakery'?>/">CONTINUE SHOPPING</a>
+			</div>
+		<?} else {?>
+			<div class="shbag-nextact">
+				<a class="backto" href="/<?=($_SESSION['app_url']=='https://sldproducts.effexhost.com/')?'sld-products':'deli-bakery'?>/">CONTINUE SHOPPING</a>
+				<a class="checkout" href="/checkout/">GO TO CHECKOUT</a>
+			</div>
+			<table class="shbag-products">
+				<tr><th>ITEM</th><th>PRICE</th><th>QUANTITY</th><th class="totlab">TOTAL</th></tr>
+				<? for($i=0;$i < count($shoppingbag_pcode); $i++) {
+					$c=$shoppingbag_ccode[$i]; $p=$shoppingbag_pcode[$i]; $q=$shoppingbag_quant[$i]; $r=$shoppingbag_color[$i]; $f=$shoppingbag_forma[$i];
+					$prow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$c."' AND prodcode = '".$p."' AND buynum != ''"));
+					$l = $prow['collection']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title']; $s = $prow['buynum'];
+					$e = $prow['price']; $m = $prow['image']; $v = $prow['ivlsize'];?>
+					<tr class="line"> 
+						<td class="item">
+							<a class="image rmar" href="<?=prod_url($c)?>/buy/<?=$k?>/">
+								<img style="<?=$v?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a>
+							<div class="text">
+								<a href="<?=prod_url($c)?>/buy/<?=$k?>/"><?=$s."<br>".$l?></a>
+								<br><small><a href="<?=prod_url($c)?>/<?=$d?>/"><?=$l?></a></small>
+								<br><small><a href="<?=prods_url($c)?>/"><?=$pageTitles[prods_page($c)]?></a></small>
+							</div>
+						</td>
+						<td class="price">$<?=$e?></td>
+						<td class="quantity">
+							<?$ips = inventory_pack_size($s); $y = inventory_for($prow);?>
+							<div class="change nosel"
+								onclick="shopbagQuant('<?=$c?>','<?=$p?>',
+										quantity('-','',       'value<?=$i?>',<?=$ips?>), '<?=$r?>','<?=$f?>','removing<?=$i?>')">-</div>
+							<textarea id="value<?=$i?>" class="value"
+								oninput="shopbagQuant('<?=$c?>','<?=$p?>',
+										quantity('c','<?=$y?>','value<?=$i?>',<?=$ips?>), '<?=$r?>','<?=$f?>','removing<?=$i?>')"><?=$q?></textarea>
+							<div class="change nosel" 
+								onclick="shopbagQuant('<?=$c?>','<?=$p?>',
+										quantity('+','<?=$y?>','value<?=$i?>',<?=$ips?>), '<?=$r?>','<?=$f?>','')">+</div>
+							<div class="text" style="line-height:2em">&nbsp;<?=forma($q,$f)?></div><?=inventory_popup()?>
+							<br><a onclick="shopbagQuant('<?=$c?>','<?=$p?>',
+										quantity('d','','value<?=$i?>'), '<?=$r?>','<?=$f?>','removing<?=$i?>')"><small>remove</small></a>
+							<div id="removing<?=$i?>" class="removing"><small>removing item...</small></div>
+						</td>
+						<td id="total<?=$i?>" class="total"></td>
+					</tr>
+				<?}?>
+			</table>
+			<table class="shbag-totals">
+				<tr><td></td><td class="spacer"></td><td class="title bb">SUBTOTAL	 </td><td id="subtotal"	 class="amount bb"></td></tr>
+				<? if($hideDDT) {?><tr><td></td><td class="spacer"></td><td colspan=2 class="title">
+					<small>Discounts, Delivery and Tax are calculated at checkout.</small></td></tr>
+				<?} else {?>
+				<tr><td></td><td class="spacer"></td><td class="title bb">DISCOUNT	 </td><td id="discount"	 class="amount bb"></td></tr>
+				<tr><td></td><td class="spacer"></td><td class="title bb">DELIVERY	 </td><td id="delivery"	 class="amount bb"></td></tr>
+				<tr><td></td><td class="spacer"></td><td class="title bb">TAX				 </td><td id="tax"				class="amount bb"></td></tr>
+				<tr><td></td><td class="spacer"></td><td class="title		">GRAND TOTAL</td><td id="grandtotal" class="amount	 "></td></tr>
+				<?}?>
+			</table>
+			<script>shopbagQuant()</script>
+			<div class="shbag-nextact">
+				<a class="backto" href="/<?=($_SESSION['app_url']=='https://sldproducts.effexhost.com/')?'sld-products':'deli-bakery'?>/">CONTINUE SHOPPING</a>
+				<a class="checkout" href="/checkout/">GO TO CHECKOUT</a>
+			</div>
+		<?}?>
+	</div>
+<?}?>
+
+<?if($page == "shbagdrop") { //************************* ?>
+
+	<? if($_GET['sel']=="update") {
+
+		$_SESSION['shoppingbag_ccode'] = $shoppingbag_ccode = explode(',', $_POST['cc']);
+		$_SESSION['shoppingbag_pcode'] = $shoppingbag_pcode = explode(',', $_POST['pc']);
+		$_SESSION['shoppingbag_quant'] = $shoppingbag_quant = explode(',', $_POST['qc']);
+		$_SESSION['shoppingbag_color'] = $shoppingbag_color = explode(',', $_POST['rc']);
+		$_SESSION['shoppingbag_forma'] = $shoppingbag_forma = explode(',', $_POST['fc']);
+	}?>
+	<div class="shbag-outer">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<? if(count($shoppingbag_pcode) == 0 || $shoppingbag_pcode[0] == "") {?>
+			<div class="shbag-empty">Your cart is empty.</div>
+		<?} else {?>
+			<table class="shbag-products">
+				<? $st=0; for($i=0;$i < count($shoppingbag_pcode); $i++) {
+					$c=$shoppingbag_ccode[$i]; $p=$shoppingbag_pcode[$i]; $q=$shoppingbag_quant[$i]; $r=$shoppingbag_color[$i]; $f=$shoppingbag_forma[$i];
+					$prow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$c."' AND prodcode = '".$p."' AND buynum != ''"));
+					$l = $prow['collection']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title']; $s = $prow['buynum']; $e = $prow['price'];
+					$m = $prow['image']; $v = $prow['ivmsize'];
+					$tot = $q * $e;
+					$st += $tot;?>
+					<tr class="line">
+						<td class="item">
+							<a class="image" href="<?=prod_url($c)?>/buy/<?=$k?>/">
+								<img style="<?=$v?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a>
+						</td>
+						<td class="item">
+							<div class="text">
+								<a href="<?=prod_url($c)?>/buy/<?=$k?>/"><?=$s."<br>".$l?></a>
+								<br><small><a href="<?=prod_url($c)?>/<?=$d?>/"><?=$l?></a></small>
+								<br><small><a href="<?=prods_url($c)?>/"><?=$pageTitles[prods_page($c)]?></a></small>
+								<br><div style="display:inline" id="value<?=$i?>"><?=$q." ".forma($q,$f)?></div>
+							</div>
+						</td>
+						<td class="total">$<?=sprintf('%0.2f',$tot)?></td>
+					</tr>
+				<?}?>
+			</table>
+			<? $ds = -0.10; $dl = 0.10; $tx = 0.05; $gt = $st + $ds + $dl + $tx; ?>
+			<table class="shbag-totals">
+				<tr><td class="title small bb">SUBTOTAL	 </td><td class="amount small bb">$<?=sprintf('%0.2f',$st)?></td></tr>
+				<? if($hideDDT) {?><tr><td colspan=2 class="title small">
+					<small>Discounts, Delivery and Tax are calculated at checkout.</small></td></tr>
+				<?} else {?>
+				<tr><td class="title small bb">DISCOUNT		</td><td class="amount small bb">$<?=sprintf('%0.2f',$ds)?></td></tr>
+				<tr><td class="title small bb">DELIVERY		</td><td class="amount small bb">$<?=sprintf('%0.2f',$dl)?></td></tr>
+				<tr><td class="title small bb">TAX				</td><td class="amount small bb">$<?=sprintf('%0.2f',$tx)?></td></tr>
+				<tr><td class="title small	 ">GRAND TOTAL</td><td class="amount small	 ">$<?=sprintf('%0.2f',$gt)?></td></tr>
+				<?}?>
+			</table>
+			<a class="checkout" href="/checkout/">GO TO CHECKOUT</a>
+			<a class="viewbag" href="/shopping-cart/">VIEW CART</a>
+		<?}?>
+	</div>
+<?}?>
+
+<?if($page == "checkout") { //************************* ?>
+
+	<div class="prod-outer">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<div class="checkout-order">
+			<div class="checkout-title">YOUR ORDER</div>
+			<? if($shoppingbag_pcode == null || count($shoppingbag_pcode) == 0) {?>
+				<div class="shbag-empty">Your cart is empty.</div>
+			<?} else {?>
+				<table class="shbag-products">
+					<tr><th>ITEM</th><th></th><th class="totlab">TOTAL</th></tr>
+					<? $st=0; for($i=0;$i < count($shoppingbag_pcode); $i++) {
+						$c=$shoppingbag_ccode[$i]; $p=$shoppingbag_pcode[$i]; $q=$shoppingbag_quant[$i]; $r=$shoppingbag_color[$i]; $f=$shoppingbag_forma[$i];
+						$prow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$c."' AND prodcode = '".$p."' AND buynum != ''"));
+						$l = $prow['collection']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title']; $s = $prow['buynum']; $e = $prow['price'];
+						$m = $prow['image']; $v = $prow['ivmsize'];
+						$tot = $q * $e;
+						$st += $tot;?>
+						<tr class="line">
+							<td class="item">
+								<a class="image" href="<?=prod_url($c)?>/buy/<?=$k?>/">
+									<img style="<?=$v?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a>
+							</td>
+							<td class="item">
+								<div class="text">
+									<a href="<?=prod_url($c)?>/buy/<?=$k?>/"><?=$s."<br>".$l?></a>
+									<br><small><a href="<?=prod_url($c)?>/<?=$d?>/"><?=$l?></a></small>
+									<br><small><a href="<?=prods_url($c)?>/"><?=$pageTitles[prods_page($c)]?></a></small>
+									<br><div style="display:inline" id="value<?=$i?>"><?=$q." ".forma($q,$f)?></div>
+								</div>
+							</td>
+							<td class="total">$<?=sprintf('%0.2f',$tot)?></td>
+						</tr>
+					<?}?>
+				</table>
+				<table class="shbag-totals">
+					<tr><td class="title bb">SUBTOTAL		</td><td id="subtotal"	 class="amount bb">$<?=sprintf('%0.2f',$st)?></td></tr>
+					<tr><td class="title bb">DISCOUNT		</td><td id="discount"	 class="amount bb"></td></tr>
+					<tr><td class="title bb">DELIVERY	 	</td><td id="delivery"	 class="amount bb"></td></tr>
+					<tr><td class="title bb">TAX				</td><td id="tax"				 class="amount bb"></td></tr>
+					<tr><td class="title	 ">GRAND TOTAL</td><td id="grandtotal" class="amount	 "></td></tr>
+				</table>
+			<?}?>
+		</div>
+		<div class="checkout-details">
+			<div class="checkout-title">YOUR DETAILS</div>
+			<?$urow = null; if(isset($_SESSION['userid'])) $urow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM users WHERE id = '".$_SESSION['userid']."'"));?>
+			<script>
+
+				function cont(s) {
+
+					var cont = eC0("continue");
+
+					if(s=="y") {
+						eId('signin').style.display = "block";
+						eC0('checkout-info delivery').style.display = "none";
+						eC0('checkout-info billing').style.display = "none";
+					}
+					if(s=="n") {
+						cC(eId('password').parentNode,"note").style.display = "none";
+						eC0('checkout-info delivery').style.display = "block";
+						eC0('checkout-info billing').style.display = "block";
+						eId('signin').style.display = "none";
+						eId('order').style.display = "block";
+					}
+					if(s=="si" && cont.classList.contains('enable')) {
+						var errors=0;
+						errors += validateInput('email');
+						errors += validateInput('password');
+						if(errors==0) {
+							eId('checkout-form').action = "/checkout/signin/";
+							eId('checkout-form').submit();
+						}
+					}
+
+					if(s=="po") {
+						var errors=0;
+						errors += validateInput('email');
+											validateInput('d_title','nr');
+						errors += validateInput('d_fname');
+						errors += validateInput('d_sname');
+						errors += validateInput('d_phone');
+						errors += validateInput('d_address1');
+											validateInput('d_address2','nr');
+						errors += validateInput('d_city');
+						errors += validateInput(eN0('d_country').value == 'CA' ? 'd_state_ca':'d_state_us');
+						errors += validateInput('d_zip');
+						errors += validateInput('d_country');
+
+						if(!eN0('billsame').checked) {
+												validateInput('b_title','nr');
+							errors += validateInput('b_fname');
+							errors += validateInput('b_sname');
+							errors += validateInput('b_phone');
+							errors += validateInput('b_address1');
+												validateInput('b_address2','nr');
+							errors += validateInput('b_city');
+							errors += validateInput(eN0('b_country').value == 'CA' ? 'b_state_ca':'b_state_us');
+							errors += validateInput('b_zip');
+							errors += validateInput('b_country');
+						}
+						if(eId('ptcr').checked) {
+							errors += validateInput('cardtype');
+							errors += validateInput('cardnum');
+							errors += validateInput('cardname');
+							errors += validateInput('expmo');
+							errors += validateInput('expyr');
+							errors += validateInput('seccode');
+							errors += validateInput('termsconds','ck');
+						}
+						else {
+							errors += validateInput('termsconds','ck1');
+						}
+
+						if(errors==0) {
+
+							if(eN0('billsame').checked) {
+								eN0('b_title').value = eN0('d_title').value;
+								eN0('b_fname').value = eN0('d_fname').value;
+								eN0('b_sname').value = eN0('d_sname').value;
+								eN0('b_phone').value = eN0('d_phone').value;
+								eN0('b_address1').value = eN0('d_address1').value;
+								eN0('b_address2').value = eN0('d_address2').value;
+								eN0('b_city').value = eN0('d_city').value;
+								eN0('b_state_us').value = eN0('d_state_us').value;
+								eN0('b_state_ca').value = eN0('d_state_ca').value;
+								eN0('b_zip').value = eN0('d_zip').value;
+								eN0('b_country').value = eN0('d_country').value;
+							}
+
+							var total = 0;
+							var delivery = eId('delivery').innerHTML.replace('$','');
+							var tax = eId('tax').innerHTML.replace('$','');
+							var paytype = eId('ptcr').checked ?"credit":"paypal";
+							var form = eId('ptcr').checked ? 0:1;
+							var xhttp = new XMLHttpRequest();
+							var url = "/submit-order.php"
+							+"?f="+form
+							+"&s=<?=session_id()?>"
+							+"&u=<?=$_SESSION['userid']?>"
+							+"&di="+disclist
+							+"&de="+delivery
+							+"&ta="+tax
+							+"&e="+eId('email').value
+							+"&r="+((eN0('receive_nl').checked) ? "on":"")
+							+"&dt="+eN0('d_title').value
+							+"&df="+eN0('d_fname').value
+							+"&ds="+eN0('d_sname').value
+							+"&dp="+eN0('d_phone').value
+							+"&d1="+eN0('d_address1').value
+							+"&d2="+eN0('d_address2').value
+							+"&dc="+eN0('d_city').value
+							+"&da="+((eN0('d_country').value == 'US') ? eN0('d_state_us').value : eN0('d_state_ca').value)
+							+"&dz="+eN0('d_zip').value
+							+"&do="+eN0('d_country').value
+							+"&dv="+(eN0('d_service') ? eN0('d_service').value : "")
+							+"&bt="+eN0('b_title').value
+							+"&bf="+eN0('b_fname').value
+							+"&bs="+eN0('b_sname').value
+							+"&bp="+eN0('b_phone').value
+							+"&b1="+eN0('b_address1').value
+							+"&b2="+eN0('b_address2').value
+							+"&bc="+eN0('b_city').value
+							+"&ba="+((eN0('b_country').value == 'US') ? eN0('b_state_us').value : eN0('b_state_ca').value)
+							+"&bz="+eN0('b_zip').value
+							+"&bo="+eN0('b_country').value
+							+"&pt="+paytype
+							+"&ct="+eN0('cardtype').value
+							+"&cn="+eN0('cardnum').value
+							+"&ca="+eN0('cardname').value
+							+"&em="+eN0('expmo').value
+							+"&ey="+eN0('expyr').value
+							+"&sc="+eN0('seccode').value;
+							xhttp.open("GET", url, false); 
+							xhttp.send();
+
+							//if(xhttp.responseText.length>12) alert("There was an error in your order submission: "+xhttp.responseText);
+
+							if(paytype == "credit") {
+
+								if(form==1) {
+
+									var af = eId("authorize");
+									af.x_login.value 				= xhttp.responseText.split(',')[0];
+									af.x_invoice_num.value 	= xhttp.responseText.split(',')[1];
+									af.x_fp_sequence.value 	= xhttp.responseText.split(',')[2];
+									af.x_fp_timestamp.value = xhttp.responseText.split(',')[3];
+									af.x_fp_hash.value 			= xhttp.responseText.split(',')[4];
+									af.x_amount.value 			= total;
+
+									//af.x_company.value 			= company;
+									af.x_first_name.value 	= eN0('b_fname').value;
+									af.x_last_name.value 		= eN0('b_sname').value;
+									af.x_address.value 			= eN0('b_address1').value;
+									af.x_city.value 				= eN0('b_city').value;
+									af.x_state.value 				= (eN0('b_country').value == 'US') ? eN0('b_state_us').value : eN0('b_state_ca').value;
+									af.x_country.value 			= eN0('b_country').value;
+									af.x_zip.value 					= eN0('b_zip').value;
+									//af.x_phone.value 				= phone;
+									af.x_email.value 				= eId('email').value;
+
+									//alert(af.x_login.value+" "+af.x_invoice_num.value+" "+af.x_fp_sequence.value+" "+af.x_fp_timestamp.value+" "+af.x_fp_hash.value);
+									af.submit();
+								}
+								else { 
+									// transaction completed; response text contains order number
+									if(xhttp.responseText.length==12 || xhttp.responseText.length==13) window.location = '/order/confirm/'+xhttp.responseText+'/'; 
+									// transaction not completed; response text contains payment response
+									else eId('transaction-error').innerHTML = "There was a problem processing your credit card:<br>"+xhttp.responseText+"<br>";
+								}
+							}
+
+							if(paytype == "paypal") {
+
+								if(form==1) {
+
+									var pf = eId("paypal");
+
+									// very strange: error reported in xhttp.responseText causes paypal form submit to return a blank page
+									pf.invoice.value 							= xhttp.responseText;
+									pf.discount_amount_cart.value = disctot;
+									pf.shipping_1.value 					= delivery;
+									pf.tax_cart.value 						= tax;
+
+									//pf.company.value 		= company;
+									pf.first_name.value = eN0('b_fname').value;
+									pf.last_name.value 	= eN0('b_sname').value;
+									pf.address1.value 	= eN0('b_address1').value;
+									pf.address2.value 	= eN0('b_address2').value;
+									pf.city.value 			= eN0('b_city').value;
+									pf.state.value 			=(eN0('b_country').value == 'US') ? eN0('b_state_us').value : eN0('b_state_ca').value;
+									pf.country.value 		= eN0('b_country').value;
+									pf.zip.value 				= eN0('b_zip').value;
+									pf.email.value 			= eId('email').value;
+
+									pf.submit();
+								}
+							}
+						}
+					}
+				}
+			</script>
+			<form id="checkout-form" method="post">
+				<div class="checkout-info light">
+					<div class="title">EMAIL ADDRESS</div>
+					<div class="fields">
+						<div class="field">Email address: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="email" id="email" value="<?=($urow['email'])?$urow['email']:$_POST['email']?>" oninput="discountCalc();">
+							<div class="error <?=$email_not_found==1 ? 'visible':''?>">Email address not found</div>
+							<div class="note">Your email address is required</div></div>
+						<div class="field"><i>To confirm your order<span class="right">* required field</span></i></div>
+						<div class="field"><label class="terms"><input type="checkbox" name="receive_nl"
+							<?=(!isset($_SESSION['userid'])||$urow['receive_nl']=="on")?"checked":""?>>Receive our email newsletters</label></div>
+					</div>
+				</div>
+				<? if(!isset($_SESSION['userid'])) {?>
+					<div class="checkout-info">
+						<div class="title">DO YOU HAVE AN ACCOUNT?</div>
+						<div class="fields">
+							<div class="field"><label><input type="radio" name="havepw" id="hpwyes" onclick="cont('y')">Yes, my password is:</label>
+								<i><a class="right uline" href="#" onclick="forgotPassword(); return false;">Forgotten password?</a></i>
+								<input type="text" name="password" id="password" value="<?=($urow['password'])?$urow['password']:$_POST['password']?>">
+								<div class="error <?=$incorrect_password==1 ? 'visible':''?>">Incorrect password</div>
+								<div class="note">Your password is required</div><div class="note" id="forgot-message"></div>
+							</div>
+							<div class="field tmar hidden" id="signin"><div class="right"></div><a class="continue enable" href="#" onclick="cont('si'); return false;">SIGN IN</a></div>
+							<div class="field"><label><input type="radio" name="havepw" id="hpwno" onclick="cont('n')">No (you can create an account later)</label></div>
+						</div>
+					</div>
+				<?}?>
+				<div class="checkout-info delivery <?=(!isset($_SESSION['userid']))?'hidden':''?>">
+					<div class="title">DELIVERY DETAILS</div>
+					<div class="fields">
+						<div class="field">Title: <div class="right"></div>
+							<input type="text" name="d_title" value="<?=$urow['title']?>"></div>
+						<div class="field">First name: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_fname" value="<?=$urow['d_fname']?>"><div class="note">First name is required</div></div>
+						<div class="field">Surname: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_sname" value="<?=$urow['d_sname']?>"><div class="note">Surname is required</div></div>
+						<div class="field">Telephone: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_phone" value="<?=$urow['d_phone']?>"><div class="note">Telephone is required</div></div>
+						<div class="field">Address line 1: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_address1" value="<?=$urow['d_address1']?>"><div class="note">Address is required</div></div>
+						<div class="field">Address line 2: <div class="right"></div>
+							<input type="text" name="d_address2" value="<?=$urow['d_address2']?>"></div>
+						<div class="field">Town&nbsp;/&nbsp;City: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_city" value="<?=$urow['d_city']?>" oninput="taxCalc();"><div class="note">City is required</div></div>
+						<div class="field">State: <span class="req">*</span><div class="right"></div>
+							<select <?=(!isset($urow['d_country'])||$urow['d_country']=="US")?'':'class="hidden"'?> name="d_state_us" onchange="deliveryCalc();taxCalc();">
+								<option value="">Please select a state...</option><?foreach($us_states as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+								<script>optsel("d_state_us","<?=$urow['d_country']=='US'?$urow['d_state']:''?>")</script>
+							<select <?=(														$urow['d_country']=="CA")?'':'class="hidden"'?> name="d_state_ca" onchange="deliveryCalc();taxCalc();">
+								<option value="">Please select a province...</option><?foreach($ca_provinces as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+								<script>optsel("d_state_ca","<?=$urow['d_country']=='CA'?$urow['d_state']:''?>")</script>
+							<div class="note">State is required</div>
+						</div>
+						<div class="field">Zip code: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_zip" value="<?=$urow['d_zip']?>" oninput="deliveryCalc();"><div class="note">Zip code is required</div></div>
+						<div class="field">Country: <span class="req">*</span><div class="right"></div>
+							<select name="d_country" id="d_country" onchange="countrysel(this,'d');deliveryCalc();taxCalc();">
+								<!--option value="">Please select a country...</option-->
+								<!--option value="CA" <?=$urow['d_country']=="CA"?"selected":""?>>Canada</option-->
+								<option value="US" <?=$urow['d_country']=="US"?"selected":""?>>United States</option>
+							</select>
+							<div class="note">Country is required</div>
+						</div>
+						<div class="field"><i><span class="right">* required field</span></i></div>
+					</div>
+					<?if($delivery_services) {?>
+						<div class="field">Delivery service: <div class="right"></div>
+							<select name="d_service" id="d_service" onchange="deliveryCalc();">
+								<? foreach($delivery_services as $v=>$t) {?><option value="<?=$v?>" <?=$urow['d_service']==$v?"selected":""?>><?=$t?></option><?}?>
+							</select>
+						</div>
+					<?}?>
+				</div>
+				<div class="checkout-info billing <?=(!isset($_SESSION['userid']))?'hidden':''?>">
+					<div class="title">BILLING DETAILS</div>
+						<div class="field"><label><input type="checkbox" name="billsame"
+								onclick="eId('addrfields').style.display = (this.checked) ? 'none':'block';"
+								<?=$urow['billsame']=="on"?"checked":""?>>Use delivery details</label>
+						</div>
+					<div class="fields <?=$urow['billsame']=='on'?'hidden':''?>" id="addrfields">
+						<div class="field">Title: <div class="right"></div>
+							<input type="text" name="b_title" value="<?=$urow['b_title']?>"></div>
+						<div class="field">First name: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_fname" value="<?=$urow['b_fname']?>"><div class="note">First name is required</div></div>
+						<div class="field">Surname: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_sname" value="<?=$urow['b_sname']?>"><div class="note">Surname is required</div></div>
+						<div class="field">Telephone: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_phone" value="<?=$urow['b_phone']?>"><div class="note">Telephone is required</div></div>
+						<div class="field">Address line 1: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_address1" value="<?=$urow['b_address1']?>"><div class="note">Address is required</div></div>
+						<div class="field">Address line 2: <div class="right"></div>
+							<input type="text" name="b_address2" value="<?=$urow['b_addrwhat is phps limit on get lengthess2']?>"></div>
+						<div class="field">Town&nbsp;/&nbsp;City: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_city" value="<?=$urow['b_city']?>"><div class="note">City is required</div></div>
+						<div class="field">State: <span class="req">*</span><div class="right"></div>
+							<select <?=(!isset($urow['b_country'])||$urow['b_country']=="US")?'':'class="hidden"'?> name="b_state_us">
+								<option value="">Please select a state...</option><?foreach($us_states as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+								<script>optsel("b_state_us","<?=$urow['b_country']=='US'?$urow['b_state']:''?>")</script>
+							<select <?=(														$urow['b_country']=="CA")?'':'class="hidden"'?> name="b_state_ca">
+								<option value="">Please select a province...</option><?foreach($ca_provinces as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+								<script>optsel("b_state_ca","<?=$urow['b_country']=='CA'?$urow['b_state']:''?>")</script>
+							<div class="note">State is required</div>
+						</div>
+						<div class="field">Zip code: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_zip" value="<?=$urow['b_zip']?>"><div class="note">Zip code is required</div></div>
+						<div class="field">Country: <span class="req">*</span><div class="right"></div>
+							<select name="b_country" id="b_country" onchange="countrysel(this,'b')">
+								<!--option value="">Please select a country...</option-->
+								<!--option value="CA" <?=$urow['b_country']=="CA"?"selected":""?>>Canada</option-->
+								<option value="US" <?=$urow['b_country']=="US"?"selected":""?>>United States</option>
+							</select>
+							<div class="note">Country is required</div>
+						</div>
+						<div class="field"><i><span class="right">* required field</span></i></div>
+					</div>
+					<div class="fields">
+						<div class="field">Discount code: <div class="right"></div>
+							<input type="text" name="discode" value="" oninput="discountCalc();"><div class="note">Code not valid</div></div>
+						<div class="field"><div class="right"></div></div>
+					</div>
+					<div class="fields">
+						<?if($credit_only) {?>
+							<div class="field">Payment type: <span>&nbsp;&nbsp;</span>
+								<label><input type="radio" name="paytype" id="ptcr" value="credit" checked>Credit card</label>
+							</div>
+						<?} else {?>
+							<div class="field">Payment type: <span>&nbsp;&nbsp;</span>
+								<script>function paysel() {
+									if(eId('ptcr').checked) { eId('fcr').style.display = 'block'; eId('fpp').style.display = 'none'; }
+									if(eId('ptpp').checked) { eId('fcr').style.display = 'none'; eId('fpp').style.display = 'block'; }
+								}</script>
+								<label><input type="radio" name="paytype" id="ptcr" value="credit" onclick="paysel()" <?=$urow['paytype']=="credit"?"checked":""?>>Credit card</label>
+								<label><input type="radio" name="paytype" id="ptpp" value="paypal" onclick="paysel()" <?=$urow['paytype']=="paypal"?"checked":""?>>Paypal</label>
+							</div>
+						<?}?>
+					</div>
+					<div class="fields <?=($credit_only||$urow['paytype']=='credit')?'':'hidden'?>" id="fcr">
+						<div class="field">Card type: <span class="req">*</span><div class="right"></div>
+							<select name="cardtype"><option value="">Select card type</option>
+							<?foreach($cardtypes as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+							<script>optsel("cardtype","<?=$urow['cardtype']?>")</script><div class="note">Card type is required</div></div>
+						<div class="field">Card number: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="cardnum" value="<?=$urow['cardnum']?>"><div class="note">Card number is required</div>
+							<div class="helper">This is the long number on the front of your card</div></div>
+						<div class="field">Name on card: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="cardname" value="<?=$urow['cardname']?>"><div class="note">Name on card is required</div></div>
+						<div class="field">Expiration month: <span class="req">*</span><div class="right"></div>
+							<select name="expmo"><option value="">Select month</option>
+							<?foreach($months as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+							<script>optsel("expmo","<?=$urow['expmo']?>")</script><div class="note">Expiration month is required</div></div>
+						<div class="field">Expiration year: <span class="req">*</span><div class="right"></div>
+							<select name="expyr"><option value="">Select year</option>
+							<?foreach($years as $v) {?><option value="<?=$v?>"><?=$v?></option><?}?></select>
+							<script>optsel("expyr","<?=$urow['expyr']?>")</script><div class="note">Expiration year is required</div></div>
+						<div class="field">Card security code: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="seccode" value="<?=$urow['seccode']?>"><div class="note">Security code is required</div>
+							<div class="helper">This is the short number on back next to your signature</div></div>
+						<div class="field"><i><span class="right">* required field</span></i></div>
+						<div class="field">
+							<label class="terms"><input type="checkbox" name="termsconds">You accept our <a class="uline" href="/terms/">terms and conditions</a></label>
+							<div class="note">Accepting our terms and conditions is required</div>
+						</div>
+						<div class="field" id="order"><div class="right"></div>
+							<a class="continue enable" href="Javascript:;" onclick="cont('po'); return false;">PLACE ORDER</a></div>
+						<div class="field">
+							<label id="transaction-error" class="terms" style="color:red"></label>
+							<label class="terms">We'll never share your details.<br>Read our <a class="uline" href="/privacy/">privacy policy</a>.</label>
+						</div>
+					</div>
+					<div class="fields <?=$urow['paytype']=='paypal'?'':'hidden'?>" id="fpp">
+						<div class="field">
+							<label class="terms"><input type="checkbox" name="termsconds">You accept our <a class="uline" href="/terms/">terms and conditions</a></label>
+							<div class="note">Accepting our terms and conditions is required</div>
+						</div>
+						<div class="field" id="order"><div class="right"></div>
+							<a class="continue enable" href="Javascript:;" onclick="cont('po');">CONTINUE TO PAYPAL</a></div>
+						<div class="field">
+							<label class="terms">We'll never share your details.<br>Read our <a class="uline" href="/privacy/">privacy policy</a>.</label>
+						</div>
+					</div>
+				</div>
+			</form>
+
+			<script>
+				var disclist='', disctot=0;
+				function discountCalc() {
+					eId("discount").innerHTML = '$0.00'; grandtotalCalc();
+					var handleStateChange = function() {
+						if(xhttp.readyState==4) {
+							disclist=''; disctot=0;
+
+							var discode = (eN0('discode').value == "test") ? -0.05 : 0;
+							if(discode!=0) disclist += (disclist ? ',' : '') +eN0('discode').value+','+discode;
+							disctot += discode;
+
+							//var disblackfriday = 0; 
+							//if(new Date().toLocaleDateString("en-US")=="11/23/2018") disblackfriday = -0.25*<?=$totprints?>;
+							//disctot += disblackfriday;
+
+							eId("discount").innerHTML = '$'+disctot.toFixed(2); grandtotalCalc();
+						}
+					}
+					if(eId('email').value) {
+						var xhttp = new XMLHttpRequest();
+						xhttp.open("GET", "/xmlhttprequest.php?page=discount&sel="+eId('email').value+"&pid="+eId("subtotal").innerHTML.replace('$',''), true);
+						xhttp.onreadystatechange=handleStateChange; xhttp.send();
+					}
+				}
+
+				function deliveryCalc() {
+					eId("delivery").innerHTML = '$8.00'; grandtotalCalc();
+				}
+
+				function taxCalc() {
+					eId("tax").innerHTML = '$0.00'; grandtotalCalc();
+					/* ** tax calc currently works for california using Oct2017CityRates.csv **
+						 ** need to specify state in url param cuz city names are generally not unique **
+					var handleStateChange = function() {
+						if(xhttp.readyState==4) {
+							var taxPc = (xhttp.responseText) ? parseFloat(xhttp.responseText) : 0;
+							var tax = parseFloat(eId("subtotal").innerHTML.replace('$','')) * 0.01*taxPc;
+							eId("tax").innerHTML = '$'+tax.toFixed(2); grandtotalCalc();
+						}
+					}
+					if(eN0('d_city').value) {
+						var xhttp = new XMLHttpRequest();
+						xhttp.open("GET", "/xmlhttprequest.php?page=tax&sel="+eN0('d_city').value, true);
+						xhttp.onreadystatechange=handleStateChange; xhttp.send();
+					}
+					*/
+				}
+				function grandtotalCalc() {
+					var errs="";
+
+					if(!eN0('d_zip').value) 
+						eId("grandtotal").innerHTML = '<font color="red"><small>Please enter a Zip code in Delivery Details.</small></font>';
+					else if(eN0('d_zip').value.trim().length<5) 
+						eId("grandtotal").innerHTML = '<font color="red"><small>Please enter a valid Zip code in Delivery Details.</small></font>';
+					else if(eN0('d_country').value=="US" && parseFloat(eId("delivery").innerHTML.replace('$',''))==0)
+						eId("grandtotal").innerHTML = '<font color="red"><small>Please enter a valid Zip code in Delivery&nbsp;Details.</small></font>';
+					else if(eN0('d_country').value=="US" && eN0('d_state_us').value=="CA" && !eN0('d_city').value)
+						eId("grandtotal").innerHTML = '<font color="red"><small>Please enter a City in Delivery&nbsp;Details.</small></font>';
+					else if(eN0('d_country').value=="US" && eN0('d_state_us').value=="CA"
+						&& parseFloat(eId("subtotal").innerHTML.replace('$',''))!=0 && parseFloat(eId("tax").innerHTML.replace('$',''))==0)
+						eId("grandtotal").innerHTML = '<font color="red"><small>Please enter a valid City in Delivery&nbsp;Details.</small></font>';
+					else {
+						var grandtotal
+							= parseFloat(eId("subtotal").innerHTML.replace('$',''))
+							+ parseFloat(eId("discount").innerHTML.replace('$',''))
+							+ parseFloat(eId("delivery").innerHTML.replace('$',''))
+							+ parseFloat(eId("tax").innerHTML.replace('$',''));
+						eId("grandtotal").innerHTML = '$'+grandtotal.toFixed(2);
+					}
+				}
+				if(eId("discount")) discountCalc(); if(eId("delivery")) deliveryCalc(); if(eId("tax")) taxCalc();
+			</script>
+
+			<form id="credit" method='post' action="https://<?=$authorize_server?>.authorize.net/gateway/transact.dll">
+				<input type='hidden' name='x_amount' />
+				<input type='hidden' name='x_login' />
+				<input type='hidden' name='x_invoice_num' />
+				<input type='hidden' name='x_fp_sequence' />
+				<input type='hidden' name='x_fp_timestamp' />
+				<input type='hidden' name='x_fp_hash' />
+				<input type='hidden' name='x_test_request' value='false' />
+				<input type='hidden' name='x_show_form' value='PAYMENT_FORM' />
+				<input type='hidden' name='x_relay_url' value='<?=$app_url?>payment-response.php?page=authorize950493029485' />
+				<!-- x_relay_url is to be assigned in authorize.net account under Settings > Response/Receipt URLs > Relay Response URL -->
+				<!-- or is providing the URL in this form input sufficient as an alternative to setting it in the authorize.net account? -->
+				<input type='hidden' name='x_description' value='
+				<? for($i=0; $i < count($shoppingbag_pcode); $i++) {
+					$c=$shoppingbag_ccode[$i]; $p=$shoppingbag_pcode[$i]; $q=$shoppingbag_quant[$i]; $r=$shoppingbag_color[$i]; $f=$shoppingbag_forma[$i];
+					$prow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$c."' AND prodcode = '".$p."' AND buynum != ''"));
+					$comma = $i==0 ? "" : ", ";
+					echo $comma.$prow['title'].dash($prow['collection']).dash($pageTitles[prods_page($c)])." (Qty. ".$q.")";
+				}?>' />
+				<input type='hidden' name='x_company' />
+				<input type='hidden' name='x_first_name' />
+				<input type='hidden' name='x_last_name' />
+				<input type='hidden' name='x_address' />
+				<input type='hidden' name='x_state' />
+				<input type='hidden' name='x_zip' />
+				<input type='hidden' name='x_city' />
+				<input type='hidden' name='x_country' />
+				<input type='hidden' name='x_email' />
+				<input type='hidden' name='x_phone' />
+
+				<input type='hidden' name='user_id' />
+				<input type="hidden" name="site_id" id="site_id" value="1" />
+				<input type="hidden" name="item_id" value="" />
+			</form>
+
+			<? /* sandbox test: when reaching paypal, login with rtd@tlp.org pw: rtdrtdrtd, then 'pay now', then return to merchant */?>
+				<form name="paypal" id="paypal" action="https://www.<?=$sandbox?'sandbox.':''?>paypal.com/cgi-bin/webscr" method="post" enctype="multipart/form-data">
+		 		<input type="hidden" name="cmd" value="_cart">
+				<input type="hidden" name="upload" value="1">
+				<input type="hidden" name="currency_code" value="USD">
+				<input type="hidden" name="business" value="robert<?=$sandbox?'-facilitator':''?>@theloveplan.org">
+				<input type="hidden" name="image_url" value="<?=$app_url?>images/logo-paypal.png">
+				<input type="hidden" name="return" value="<?=$app_url?>order/confirm/" />
+				<input type="hidden" name="cancel_return" value="<?=$app_url?>checkout/cancel/" />
+				<input type="hidden" name="notify_url" value="<?=$app_url?>payment-response.php?page=paypal4924094" />
+				<!--input type="hidden" name="notify_version" value="2.4" /-->
+				<input type="hidden" name="no_note" value="1">
+				<input type="hidden" name="rm" value="2">
+				<input type="hidden" name="no_shipping" value="1">
+				<input type="hidden" name="invoice" />
+				<input type="hidden" name="discount_amount_cart" />
+				<input type="hidden" name="shipping_1" />
+				<input type="hidden" name="tax_cart" />
+
+				<? for($i=0; $i < count($shoppingbag_pcode); $i++) {
+					$c=$shoppingbag_ccode[$i]; $p=$shoppingbag_pcode[$i]; $q=$shoppingbag_quant[$i]; $r=$shoppingbag_color[$i]; $f=$shoppingbag_forma[$i];
+					$prow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$c."' AND prodcode = '".$p."' AND buynum != ''"));
+					?><input type="hidden" name="item_name_<?=$i+1?>"
+							value="<?=$prow['title'].dash($prow['collection']).dash($pageTitles[prods_page($c)]).dash(forma($q,$f))?>">
+						<input type="hidden" name="quantity_<?=$i+1?>" value="<?=$q?>">
+						<input type="hidden" name="amount_<?=$i+1?>" value="<?=price($prow['price'],$_SESSION['userid'],$f)?>" />
+				<?}?>
+
+				<input type='hidden' name='company' />
+				<input type="hidden" name="first_name">
+				<input type="hidden" name="last_name">
+		 		<input type="hidden" name="address1">
+				<input type="hidden" name="address2">
+				<input type="hidden" name="city">
+				<input type="hidden" name="state">
+				<input type="hidden" name="country">
+		 		<input type="hidden" name="zip">
+				<input type="hidden" name="email">
+			</form>
+		</div>
+	</div>
+<?}?>
+
+<?if($page == "newsletter") { //*************************
+	?>
+	<div class="account-outer">
+
+		<?if($_GET['sel']=="unsubscribe") {
+				$email = str_replace('charatsign', '@', str_replace('charperiod', '.', $_GET['pid']));
+				if(mysqli_num_rows(mysqli_query($dbc,"SELECT * FROM users WHERE email = '".$email."'"))<1) { 
+					?>We're sorry but there was a problem with unsubscribe.  Please contact us at <?=$contact_email?>.<?
+				}
+				else {
+					mysqli_query($dbc,"UPDATE users SET receive_nl = '' WHERE email = '".$email."'");
+					?><br><br>You are now unsubscribed from <?=$contact_name_part?> newsletter.  You may sign up again at any time.<br><br><?
+				}
+		}?>
+
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<div class="checkout-title">SIGN UP</div>
+
+		<form action="#">
+			<div class="checkout-info light" style="margin-bottom:40px">
+				<div class="fields">
+					<div class="field">Email address: <div class="right"></div>
+					<input type="text" onkeypress="newsletterSignup(this,event)">
+					<div class="error"></div></div>
+				</div>
+			</div>
+		</form>
+
+	</div>
+<?}?>
+
+<?if($page == "account") { //*************************
+
+	$urow = null; if(isset($_SESSION['userid'])) $urow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM users WHERE id = '".$_SESSION['userid']."'"));
+	?>
+	<div class="breadcrumbs">
+		<div class="breadcrumbs-outer">
+			<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+			<div class="breadcrumbs-bull">&#8227;</div>
+			<div class="breadcrumbs-item">ACCOUNT</div>
+		</div>
+	</div>
+
+	<div class="account-outer">
+
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<div class="checkout-title"><?=(isset($_SESSION['userid']))?"YOUR DETAILS":"SIGN IN / REGISTER"?></div>
+
+		<script>
+
+			function cont(s) {
+
+				var cont = eC0("continue");
+
+				if(s=="y") {
+					eId('signin').style.display = "block";
+					eId('confirm').style.display = "none";
+					eId('register').style.display = "none";
+					eId('receive_nl').style.display = "none";
+				}
+				if(s=="n") {
+					cC(eId('password').parentNode,"note").style.display = "none";
+					eId('signin').style.display = "none"; 
+					eId('confirm').style.display = "block";
+					eId('register').style.display = "block";
+					eId('receive_nl').style.display = "block";
+				}
+				if(s=="si" && cont.classList.contains('enable')) {
+					var errors = 0;
+					errors += validateInput('email');
+					errors += validateInput('password');
+					if(errors==0) {
+						eId('account-form').action = "/account/signin/";
+						eId('account-form').submit();
+					}
+				}
+				if(s=="pn") {
+					eId('confirm').style.display = "block";
+					eId('register').style.display = "block";
+					eId('receive_nl').style.display = "block";
+					eId('hpwyes').checked = false; eId('hpwno').checked = true;
+				}
+				if(s=="psi" && cont.classList.contains('enable')) {
+					eId('signin').style.display = "block";
+					eId('hpwyes').checked = true; eId('hpwno').checked = false;
+				}
+
+				if(s=="r" && cont.classList.contains('enable')) {
+					var errors=0;
+					errors += validateInput('email');
+					errors += validateInput('password','pw','password2');
+
+					if(errors==0) {
+						eId('account-form').action = "/account/register/";
+						eId('account-form').submit();
+					}
+				}
+
+				if(s=="ud") {
+					var errors=0;
+					errors += validateInput('email');
+					errors += validateInput('password','pw','password2');
+										validateInput('d_title','nr');
+					errors += validateInput('d_fname');
+					errors += validateInput('d_sname');
+					errors += validateInput('d_phone');
+					errors += validateInput('d_address1');
+										validateInput('d_address2','nr');
+					errors += validateInput('d_city');
+					errors += validateInput(eN0('d_country').value == 'CA' ? 'd_state_ca':'d_state_us');
+					errors += validateInput('d_zip');
+					errors += validateInput('d_country');
+
+					if(!eN0('billsame').checked) {
+											validateInput('b_title','nr');
+						errors += validateInput('b_fname');
+						errors += validateInput('b_sname');
+						errors += validateInput('b_phone');
+						errors += validateInput('b_address1');
+											validateInput('b_address2','nr');
+						errors += validateInput('b_city');
+						errors += validateInput(eN0('b_country').value == 'CA' ? 'b_state_ca':'b_state_us');
+						errors += validateInput('b_zip');
+						errors += validateInput('b_country');
+					}
+					if(eId('ptcr').checked) {
+						errors += validateInput('cardtype');
+						errors += validateInput('cardnum');
+						errors += validateInput('cardname');
+						errors += validateInput('expmo');
+						errors += validateInput('expyr');
+						errors += validateInput('seccode');
+					}
+
+					if(errors==0) {
+						eId('account-form').action = "/account/update/";
+						eId('account-form').submit();
+					}
+				}
+			}
+		</script>
+		<? if(!isset($_SESSION['userid'])) {?>
+			<form id="account-form" method="post">
+				<div class="checkout-info light">
+					<div class="title">EMAIL ADDRESS</div>
+					<div class="fields">
+						<div class="field">Email address: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="email" id="email" value="<?=$_POST['email']?>">
+							<div class="error <?=$email_not_found==1 ? 'visible':''?>">Email address not found</div>
+							<div class="error <?=$email_in_use==1 ? 'visible':''?>">Email address in use</div>
+							<div class="note">Your email address is required</div></div>
+						<div class="field"><i><span class="right">* required field</span></i></div>
+					</div>
+				</div>
+				<div class="checkout-info">
+					<div class="title">DO YOU HAVE AN ACCOUNT?</div>
+					<div class="fields">
+						<div class="field"><label><input type="radio" name="havepw" id="hpwyes" onclick="cont('y')">Yes, my password is: *</label>
+							<i><a class="right uline" href="#" onclick="forgotPassword(); return false;">Forgotten password?</a></i>
+							<input type="text" name="password" id="password" value="<?=$_POST['password']?>">
+							<div class="error <?=$incorrect_password==1 ? 'visible':''?>">Incorrect password</div>
+							<div class="note">Your password is required</div><div class="note" id="forgot-message"></div>
+						</div>
+						<div class="field tmar hidden" id="signin"><div class="right"></div><a class="continue enable" href="#" onclick="cont('si'); return false;">SIGN IN</a></div>
+						<div class="field tmar hidden" id="confirm">Confirm password: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="password2" id="password2" value="<?=$_POST['password2']?>">
+							<div class="note">Your password is required</div><div class="error">Passwords do not match</div></div>
+						<div class="field"><label><input type="radio" name="havepw" id="hpwno" onclick="cont('n')">No, I'd like to register</label>
+							<i><span class="right">* required field</span></i></div>
+						<div class="field hidden" id="receive_nl">
+							<label class="terms"><input type="checkbox" name="receive_nl" <?=$urow['receive_nl']=="on"?"checked":""?>>Receive our email newsletters</label></div>
+						<div class="field hidden" id="register"><div class="right"></div>
+							<a class="continue enable" href="#" onclick="cont('r'); return false;">REGISTER</a></div>
+					</div>
+					<?if($_GET["sel"]=="signin"){?><script>cont('psi')</script><?}?>
+					<?if($_GET["sel"]=="register"){?><script>cont('pn')</script><?}?>
+				</div>
+			</form>
+		<?} else {?>
+			<form id="account-form" action="/account/" method="post">
+				<div class="checkout-info light">
+					<div class="title">ACCOUNT DETAILS</div>
+					<div class="fields">
+						<div class="field">Email address: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="email" id="email" value="<?=($urow['email'])?$urow['email']:$_POST['email']?>">
+							<div class="error <?=$email_not_found==1 ? 'visible':''?>">Email address not found</div>
+							<div class="note">Your email address is required</div></div>
+						<div class="field tmar" id="confirm">Password: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="password" id="password" value="<?=($urow['password'])?$urow['password']:$_POST['password']?>">
+							<div class="note">Your password is required</div></div>
+						<div class="field tmar" id="confirm">Confirm password: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="password2" id="password2" value="<?=($urow['password'])?$urow['password']:$_POST['password2']?>">
+							<div class="note">Your password is required</div><div class="error">Passwords do not match</div></div>
+						<div class="field"><i><span class="right">* required field</span></i></div>
+						<div class="field">
+							<label class="terms"><input type="checkbox" name="receive_nl" <?=$urow['receive_nl']=="on"?"checked":""?>>Receive our email newsletters</label></div>
+					</div>
+				</div>
+				<div class="checkout-info delivery">
+					<div class="title">DELIVERY DETAILS</div>
+					<div class="fields">
+						<div class="field">Title: <div class="right"></div>
+							<input type="text" name="d_title" value="<?=$urow['d_title']?>"></div>
+						<div class="field">First name: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_fname" value="<?=$urow['d_fname']?>"><div class="note">First name is required</div></div>
+						<div class="field">Surname: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_sname" value="<?=$urow['d_sname']?>"><div class="note">Surname is required</div></div>
+						<div class="field">Telephone: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_phone" value="<?=$urow['d_phone']?>"><div class="note">Telephone is required</div></div>
+						<div class="field">Address line 1: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_address1" value="<?=$urow['d_address1']?>"><div class="note">Address is required</div></div>
+						<div class="field">Address line 2: <div class="right"></div>
+							<input type="text" name="d_address2" value="<?=$urow['d_address2']?>"></div>
+						<div class="field">Town&nbsp;/&nbsp;City: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_city" value="<?=$urow['d_city']?>"><div class="note">City is required</div></div>
+						<div class="field">State: <span class="req">*</span><div class="right"></div>
+							<select <?=(!isset($urow['d_country'])||$urow['d_country']=="US")?'':'class="hidden"'?> name="d_state_us">
+								<option value="">Please select a state...</option><?foreach($us_states as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+								<script>optsel("d_state_us","<?=$urow['d_country']=='US'?$urow['d_state']:''?>")</script>
+							<select <?=																$urow['d_country']=="CA"?'':'class="hidden"'?> name="d_state_ca">
+								<option value="">Please select a province...</option><?foreach($ca_provinces as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+								<script>optsel("d_state_ca","<?=$urow['d_country']=='CA'?$urow['d_state']:''?>")</script>
+							<div class="note">State is required</div>
+						</div>
+						<div class="field">Zip code: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="d_zip" value="<?=$urow['d_zip']?>"><div class="note">Zip code is required</div></div>
+						<div class="field">Country: <span class="req">*</span><div class="right"></div>
+							<select name="d_country" id="d_country" onchange="countrysel(this,'d')">
+								<!--option value="">Please select a country...</option-->
+								<!--option value="CA" <?=$urow['d_country']=="CA"?"selected":""?>>Canada</option-->
+								<option value="US" <?=$urow['d_country']=="US"?"selected":""?>>United States</option>
+							</select>
+							<div class="note">Country is required</div>
+						</div>
+						<div class="field"><i><span class="right">* required field</span></i></div>
+					</div>
+					<?if($delivery_services) {?>
+						<div class="field">Delivery service: <div class="right"></div>
+							<select name="d_service">
+								<? foreach($delivery_services as $v=>$t) {?><option value="<?=$v?>" <?=$urow['d_service']==$v?"selected":""?>><?=$t?></option><?}?>
+							</select>
+						</div>
+					<?}?>
+				</div>
+				<div class="checkout-info billing">
+					<div class="title">BILLING DETAILS</div>
+						<div class="field"><label><input type="checkbox" name="billsame"
+								onclick="eId('addrfields').style.display = (this.checked) ? 'none':'block';"
+								<?=$urow['billsame']=="on"?"checked":""?>>Use delivery details</label>
+						</div>
+					<div class="fields <?=$urow['billsame']=='on'?'hidden':''?>" id="addrfields">
+						<div class="field">Title: <div class="right"></div>
+							<input type="text" name="b_title" value="<?=$urow['b_title']?>"></div>
+						<div class="field">First name: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_fname" value="<?=$urow['b_fname']?>"><div class="note">First name is required</div></div>
+						<div class="field">Surname: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_sname" value="<?=$urow['b_sname']?>"><div class="note">Surname is required</div></div>
+						<div class="field">Telephone: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_phone" value="<?=$urow['b_phone']?>"><div class="note">Telephone is required</div></div>
+						<div class="field">Address line 1: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_address1" value="<?=$urow['b_address1']?>"><div class="note">Address is required</div></div>
+						<div class="field">Address line 2: <div class="right"></div>
+							<input type="text" name="b_address2" value="<?=$urow['b_address2']?>"></div>
+						<div class="field">Town&nbsp;/&nbsp;City: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_city" value="<?=$urow['b_city']?>"><div class="note">City is required</div></div>
+						<div class="field">State: <span class="req">*</span><div class="right"></div>
+							<select <?=(!isset($urow['b_country'])||$urow['b_country']=="US")?'':'class="hidden"'?> name="b_state_us">
+								<option value="">Please select a state...</option><?foreach($us_states as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+								<script>optsel("b_state_us","<?=$urow['b_country']=='US'?$urow['b_state']:''?>")</script>
+							<select <?=																$urow['b_country']=="CA"?'':'class="hidden"'?> name="b_state_ca">
+								<option value="">Please select a province...</option><?foreach($ca_provinces as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+								<script>optsel("b_state_ca","<?=$urow['b_country']=='CA'?$urow['b_state']:''?>")</script>
+							<div class="note">State is required</div>
+						</div>
+						<div class="field">Zip code: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="b_zip" value="<?=$urow['b_zip']?>"><div class="note">Zip code is required</div></div>
+						<div class="field">Country: <span class="req">*</span><div class="right"></div>
+							<select name="b_country" id="b_country" onchange="countrysel(this,'b')">
+								<!--option value="">Please select a country...</option-->
+								<!--option value="CA" <?=$urow['b_country']=="CA"?"selected":""?>>Canada</option-->
+								<option value="US" <?=$urow['b_country']=="US"?"selected":""?>>United States</option>
+							</select>
+							<div class="note">Country is required</div>
+						</div>
+						<div class="field"><i><span class="right">* required field</span></i></div>
+					</div>
+					<div class="fields">
+						<?if($credit_only) {?>
+							<div class="field">Payment type: <span>&nbsp;&nbsp;</span>
+								<label><input type="radio" name="paytype" id="ptcr" value="credit" checked>Credit card</label>
+							</div>
+						<?} else {?>
+							<div class="field">Payment type: <span>&nbsp;&nbsp;</span>
+								<script>function paysel() {
+									if(eId('ptcr').checked) { eId('fcr').style.display = 'block'; eId('fpp').style.display = 'none'; }
+									if(eId('ptpp').checked) { eId('fcr').style.display = 'none'; eId('fpp').style.display = 'block'; }
+								}</script>
+								<label><input type="radio" name="paytype" id="ptcr" value="credit" onclick="paysel()" <?=$urow['paytype']=="credit"?"checked":""?>>Credit card</label>
+								<label><input type="radio" name="paytype" id="ptpp" value="paypal" onclick="paysel()" <?=$urow['paytype']=="paypal"?"checked":""?>>Paypal</label>
+							</div>
+						<?}?>
+					</div>
+					<div class="fields <?=($credit_only||$urow['paytype']=='credit')?'':'hidden'?>" id="fcr">
+						<div class="field">Card type: <span class="req">*</span><div class="right"></div>
+							<select name="cardtype"><option value="">Select card type</option>
+							<?foreach($cardtypes as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+							<script>optsel("cardtype","<?=$urow['cardtype']?>")</script><div class="note">Card type is required</div></div>
+						<div class="field">Card number: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="cardnum" value="<?=$urow['cardnum']?>"><div class="note">Card number is required</div>
+							<div class="helper">This is the long number on the front of your card</div></div>
+						<div class="field">Name on card: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="cardname" value="<?=$urow['cardname']?>"><div class="note">Name on card is required</div></div>
+						<div class="field">Expiration month: <span class="req">*</span><div class="right"></div>
+							<select name="expmo"><option value="">Select month</option>
+							<?foreach($months as $k=>$v) {?><option value="<?=$k?>"><?=$v?></option><?}?></select>
+							<script>optsel("expmo","<?=$urow['expmo']?>")</script><div class="note">Expiration month is required</div></div>
+						<div class="field">Expiration year: <span class="req">*</span><div class="right"></div>
+							<select name="expyr"><option value="">Select year</option>
+							<?foreach($years as $v) {?><option value="<?=$v?>"><?=$v?></option><?}?></select>
+							<script>optsel("expyr","<?=$urow['expyr']?>")</script><div class="note">Expiration year is required</div></div>
+						<div class="field">Card security code: <span class="req">*</span><div class="right"></div>
+							<input type="text" name="seccode" value="<?=$urow['seccode']?>"><div class="note">Security code is required</div>
+							<div class="helper">This is the short number on back next to your signature</div></div>
+						<div class="field"><i><span class="right">* required field</span></i></div>
+					</div>
+					<div class="fields <?=$urow['paytype']=='paypal'?'':'hidden'?>" id="fpp">
+					</div>
+					<div class="fields">
+						<div class="field"><div class="right"></div>
+							<a class="continue enable" href="#" onclick="cont('ud'); return false;">UPDATE YOUR DETAILS</a></div>
+						<div class="field">
+							<label class="terms">We'll never share your details.<br>Read our <a class="uline" href="/privacy/">privacy policy</a>.</label>
+						</div>
+					</div>
+				</div>
+			</form>
+			<div class="checkout-title tmar">YOUR ORDERS</div>
+			<div class="checkout-info light">
+				<div class="fields">
+					<div class="field tmar"><div class="right"></div>
+						<a class="continue enable" href="/orders/">VIEW YOUR ORDERS</a></div>
+				</div>
+			</div>
+			<? if($urow['email']==$contact_email || $urow['email']=="robert@theloveplan.org") {?>
+				<div class="checkout-title tmar">ADMIN</div>
+				<div class="checkout-info light">
+					<div class="fields">
+						<div class="field tmar"><div class="right"></div>
+							<a class="continue enable" href="/admin/">VIEW ADMIN PAGE</a></div>
+					</div>
+				</div>
+			<?}?>
+		<?}?>
+	</div>
+<?}?>
+
+<?if($page == "admin") { //*************************
+?>
+	<div class="breadcrumbs">
+		<div class="breadcrumbs-outer">
+			<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+			<div class="breadcrumbs-bull">&#8227;</div>
+			<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/account/">ACCOUNT</a></div>
+			<div class="breadcrumbs-bull">&#8227;</div>
+			<div class="breadcrumbs-item">ADMIN</div>
+		</div>
+	</div>
+	<div class="account-outer" style="width:80%;max-width:80%">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+
+		<?$secure=1; if($secure && !isset($_SESSION['userid'])) {?>Please <a href="/account/">sign in</a>.<?}
+		else {
+			$urow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM users WHERE id = '".$_SESSION['userid']."'"));
+			if($secure && $urow['email'] != $contact_email && $urow['email'] != "robert@theloveplan.org") {?>
+				Please <a href="/account/">sign in</a> as <?=$contact_email?>.<?}
+			else {?>
+				<!--****** SELECT ADMIN SECTIONS ON/OFF ******-->
+				<table width="100%"><tr><td><h4>Please Select Admin Section:</h4></td></tr><tr><td>
+					<? $adminpages = array("images","spots","products","orders","users");
+					foreach($adminpages as $apage) {?>
+						<a style="margin:0 10px; <?=$_GET['sel']==$apage?'color:black;font-weight:bold;cursor:default':''?>"
+							href="/admin/<?=$apage?>/"><?=strtoupper($apage)?></a>&nbsp;&nbsp;
+					<?}?>
+					</td></tr>
+				</table>
+
+				<!-- IMAGES -->
+				<?if($_GET['sel']=="images") {?>
+					<div class="checkout-title admin-title">IMAGES</div>
+					<div class="checkout-note"></div>
+					<table class="shbag-products"><?
+						$path = $app_path."images";
+
+						$dir="sld-products"; if ($dd = opendir($path."/".$dir."/")) {?>
+							<tr><td style="text-align:left;padding:60px 0 0"><?=$dir?></td></tr>
+							<tr><td style="text-align:left;padding:10px 0">
+								<?$arr = array(); while (false !== ($file = readdir($dd))) if (is_file($path."/".$dir."/".$file) && !strinstr("Buy-",$file)) $arr[] = $file;
+									closedir($dd); natsort($arr); foreach($arr as $file) {?>
+									<a style="cursor:pointer; margin:5px" href="/images/<?=$dir?>/<?=$file?>" target="_blank">
+										<img style="width:40px" src="/images/<?=$dir?>/<?=$file?>" title="<?=$file?>"></a><?}?>
+							</td></tr>
+				    <?}
+
+							$dir="sld-products/cluster"; if ($dd = opendir($path."/".$dir."/")) {?>
+								<tr><td style="text-align:left;padding:60px 0 0 50px"><?=$dir?></td></tr>
+								<tr><td style="text-align:left;padding:10px 0 0 50px">
+									<?$arr = array(); while (false !== ($file = readdir($dd))) if (is_file($path."/".$dir."/".$file)) $arr[] = $file;
+										closedir($dd); natsort($arr); foreach($arr as $file) {?>
+										<a style="cursor:pointer; margin:5px" href="/images/<?=$dir?>/<?=$file?>" target="_blank">
+											<img style="width:30px" src="/images/<?=$dir?>/<?=$file?>" title="<?=$file?>"></a><?}?>
+								</td></tr>
+							<?}
+
+							$dir="sld-products"; if ($dd = opendir($path."/".$dir."/")) {?>
+								<tr><td style="text-align:left;padding:60px 0 0 50px"><?=$dir." buy"?></td></tr>
+								<tr><td style="text-align:left;padding:10px 0 0 50px">
+									<?$arr = array(); while (false !== ($file = readdir($dd))) if (is_file($path."/".$dir."/".$file) && strinstr("Buy-",$file)) $arr[] = $file;
+										closedir($dd); natsort($arr); foreach($arr as $file) {?>
+										<a style="cursor:pointer; margin:3px" href="/images/<?=$dir?>/<?=$file?>" target="_blank">
+											<img style="width:20px" src="/images/<?=$dir?>/<?=$file?>" title="<?=$file?>"></a><?}?>
+								</td></tr>
+							<?}
+
+						$dir="deli-bakery"; if ($dd = opendir($path."/".$dir."/")) {?>
+							<tr><td style="text-align:left;padding:60px 0 0"><?=$dir?></td></tr>
+							<tr><td style="text-align:left;padding:10px 0">
+								<?$arr = array(); while (false !== ($file = readdir($dd))) if (is_file($path."/".$dir."/".$file)) $arr[] = $file;
+									closedir($dd); natsort($arr); foreach($arr as $file) {?>
+									<a style="cursor:pointer; margin:5px" href="/images/<?=$dir?>/<?=$file?>" target="_blank">
+										<img style="width:40px" src="/images/<?=$dir?>/<?=$file?>" title="<?=$file?>"></a><?}?>
+							</td></tr>
+				    <?}
+
+								$dir="deli-bakery/cluster"; if ($dd = opendir($path."/".$dir."/")) {?>
+									<tr><td style="text-align:left;padding:60px 0 0 50px"><?=$dir?></td></tr>
+									<tr><td style="text-align:left;padding:10px 0 0 50px">
+										<?$arr = array(); while (false !== ($file = readdir($dd))) if (is_file($path."/".$dir."/".$file)) $arr[] = $file;
+											closedir($dd); natsort($arr); foreach($arr as $file) {?>
+											<a style="cursor:pointer; margin:5px" href="/images/<?=$dir?>/<?=$file?>" target="_blank">
+												<img style="width:40px" src="/images/<?=$dir?>/<?=$file?>" title="<?=$file?>"></a><?}?>
+									</td></tr>
+								<?}
+
+								$dir="deli-bakery/library"; if ($dd = opendir($path."/".$dir."/")) {?>
+									<tr><td style="text-align:left;padding:60px 0 0 50px"><?=$dir?></td></tr>
+									<tr><td style="text-align:left;padding:10px 0 0 50px">
+										<?$arr = array(); while (false !== ($file = readdir($dd))) if (is_file($path."/".$dir."/".$file)) $arr[] = $file;
+											closedir($dd); natsort($arr); foreach($arr as $file) {?>
+											<a style="cursor:pointer; margin:5px" href="/images/<?=$dir?>/<?=$file?>" target="_blank">
+												<img style="width:40px" src="/images/<?=$dir?>/<?=$file?>" title="<?=$file?>"></a><?}?>
+									</td></tr>
+								<?}
+
+						$dir="features"; if ($dd = opendir($path."/".$dir."/")) {?>
+							<tr><td style="text-align:left;padding:60px 0 0"><?=$dir?></td></tr>
+							<tr><td style="text-align:left;padding:10px 0">
+								<?$arr = array(); while (false !== ($file = readdir($dd))) if (is_file($path."/".$dir."/".$file)) $arr[] = $file;
+									closedir($dd); natsort($arr); foreach($arr as $file) {?>
+									<a style="cursor:pointer; margin:5px" href="/images/<?=$dir?>/<?=$file?>" target="_blank">
+										<img style="width:40px" src="/images/<?=$dir?>/<?=$file?>" title="<?=$file?>"></a><?}?>
+							</td></tr>
+				    <?}?>
+					</table>
+				<?}?>
+
+				<!-- SPOTS -->
+				<?if($_GET['sel']=="spots") {
+					$sql = mysqli_query($dbc,"SELECT * FROM spots ORDER BY id DESC");
+					if(isset($_POST['submitSpots'])) {
+						$sql = mysqli_query($dbc,"SELECT * FROM spots"); while($srow = mysqli_fetch_assoc($sql))
+						mysqli_query($dbc,"UPDATE spots SET name       = '".$_POST['name'][$srow['id']]      ."' WHERE id = '".$srow['id']."'");
+						mysqli_query($dbc,"UPDATE spots SET start_time = '".$_POST['start_time'][$srow['id']]."' WHERE id = '".$srow['id']."'");
+						mysqli_query($dbc,"UPDATE spots SET stop_time  = '".$_POST['stop_time'][$srow['id']] ."' WHERE id = '".$srow['id']."'");
+					}
+					if(mysqli_num_rows($sql)<1) {?><br>No spots.<?}
+					else {?>
+						<div class="checkout-title admin-title">SPOTS</div>
+						<div class="checkout-note">To set name, start time & stop time, edit the fields, then press Update Spots.</div>
+						<form action="" method="POST" enctype="multipart/form-data">
+							<table class="shbag-products">
+								<tr><th>DATE</th><th>SPOT NAME</th><th>START TIME</th><th>STOP TIME</th></tr>
+								<? $login_email = user_email($_SESSION['userid']); $my_email = "robert@theloveplan.org"; 
+									$j=0; while($orow = mysqli_fetch_assoc($sql)) if(!($orow['email'] == $my_email && $login_email != $my_email)) {
+										$products = shopbag_explode($orow['shopbag']);
+										$subtotal=0; for($i=0;$i < count($products); $i++) {
+											$parr = product_explode($products[$i]); $c=$parr[0]; $p=$parr[1]; $q=$parr[2]; $color=$parr[3]; $forma=$parr[4]; $price=$parr[5];
+											$subtotal += $price * $q;
+									}
+									$total = $subtotal + discount($orow['discount']) + $orow['delivery'] + $orow['tax'];?>
+									<tr class="line">
+										<td class="date" style="width:30%"><small><?=date($date_format,$orow['timestamp'])?></small></td>
+										<td class="item">
+											<div class="text" style="width:15%"><a href="/order/display/<?=$orow['number']?>/"><?=$orow['number']?></a></div>
+										</td>
+										<td class="item" style="width:20%;padding-left:20px;">
+											<div class="text"><?=$orow['d_fname']." ".$orow['d_sname']?></div></td>
+										<td class="status" style="width:15%"><?=$orow['status']?></td>
+										<td class="total">$<?=sprintf('%0.2f',$total)?></td>
+										<td class="status"><input type="checkbox" name="delete[<?=$j;?>]" id="delete[<?=$j;?>]" value="<?=$orow[id]?>"></td>
+									</tr>
+								<? $j++; }?>
+							</table>
+							<div class="checkout-info light">
+								<div class="fields">
+									<div class="field tmar"><div class="right"></div>
+										<input type="submit" name="submitOrders" value="UPDATE ORDERS"></div>
+								</div>
+							</div>
+						</form>
+					<?}?>
+				<?}?>
+
+				<!-- PRODUCTS -->
+				<?if($_GET['sel']=="products") {
+					if(isset($_POST['submitProducts'])) {
+						$sql = mysqli_query($dbc,"SELECT * FROM products"); while($prow = mysqli_fetch_assoc($sql)) {
+							mysqli_query($dbc,"UPDATE products SET inventory = '".$_POST['inventory'][$prow['id']]."' WHERE id = '".$prow['id']."'");
+							$fd = fopen('inventory_log', 'a'); fwrite($fd,date($date_format)." - pro ".$prow['id']." vd pnv ".var_dump($_POST['inventory'])."\n"); fclose($fd);
+						}
+					}
+					$sql = mysqli_query($dbc,"SELECT * FROM products ORDER BY id ASC");
+					if(mysqli_num_rows($sql)<1) {?><br>No products.<?}
+					else {?>
+						<div class="checkout-title admin-title">PRODUCTS</div>
+						<div class="checkout-note">
+							For each product enter the total number of products in inventory or leave blank.  Then press Update Products.
+							The system will notify the user, limit purchase quantities to inventory, and subtract purchased quantities from inventory.
+						</div>
+						<form action="" method="POST" enctype="multipart/form-data">
+							<table class="shbag-products">
+								<tr><th>CATEGORY</th><th>COLLECTION</th><th>TITLE</th><th>SKU</th><th>PRICE</th><th>INVENTORY</th></tr>
+								<? while($prow = mysqli_fetch_assoc($sql)) {?>
+									<tr class="line">
+										<td class="admin"><?=$prow['category']?></td>
+										<td class="admin"><?=$prow['collection']?></td>
+										<td class="admin"><div class="text"><a href="/<?=$prow['category']?>/<?=$prow['prodlink']?>/"><?=$prow['title']?></a></div></td>
+										<td class="admin"><?=$prow['prodcode']?></td>
+										<td class="admin" style="text-align:right"><?=$prow['price']?></td>
+										<?if($prow['buynum']!="Buy 1" && $prow['buynum']!="Buy 3" && $prow['buynum']!="Buy 6" && $prow['buynum']!="Buy 12") {?>
+											<td class="admin"><textarea style="width:80px;height:30px" rows="1" name="inventory[<?=$prow['id']?>]"><?=$prow['inventory']?></textarea></td>
+										<?}?>
+									</tr>
+								<?}?>
+							</table>
+							<div class="checkout-info light">
+								<div class="fields">
+									<div class="field tmar"><div class="right"></div>
+										<input type="submit" name="submitProducts" value="UPDATE PRODUCTS"></div>
+								</div>
+							</div>
+						</form>
+					<?}?>
+				<?}?>
+
+				<!-- ORDERS -->
+				<?if($_GET['sel']=="orders") {
+					$status = $_GET['pid']==''?'all':$_GET['pid'];
+					if($status == "all") $sql = mysqli_query($dbc,"SELECT * FROM orders ORDER BY timestamp DESC");
+					else									$sql = mysqli_query($dbc,"SELECT * FROM orders WHERE status = '".$status."' ORDER BY timestamp DESC");
+					if(isset($_POST['submitOrders'])) {
+						if (sizeof($_POST['delete']) > 0) {
+							echo "<br>";
+							foreach ($_POST['delete'] as $id) {
+								echo "<br>Deleted order no. ".order_number($id).".<br>";
+								mysqli_query($dbc,"DELETE from orders WHERE id = '" . $id . "'");
+							}
+							echo "<br>";
+							$sql = mysqli_query($dbc,"SELECT * FROM orders ORDER BY timestamp DESC");
+						}
+					}
+					if(mysqli_num_rows($sql)<1) {?><br>No orders.<?}
+					else {?>
+						<div class="checkout-title admin-title">ORDERS</div>
+						<div class="checkout-note">To delete orders, check delete, then press Update Orders.</div>
+						<div class="checkout-note">Select Status:
+							<a style="margin:0 0 0 10px;padding:0;<?=$status=='all'      ?'color:black;font-weight:bold;cursor:default':''?>" href="/admin/orders/all/">All</a>
+							<a style="margin:0 0 0 10px;padding:0;<?=$status=='completed'?'color:black;font-weight:bold;cursor:default':''?>" href="/admin/orders/completed/">Completed</a>
+							<a style="margin:0 0 0 10px;padding:0;<?=$status=='pending'  ?'color:black;font-weight:bold;cursor:default':''?>" href="/admin/orders/pending/">Pending</a>
+						</div>
+						<form action="" method="POST" enctype="multipart/form-data">
+							<table class="shbag-products">
+								<tr><th>DATE</th><th>ORDER NUMBER</th><th>BILL TO</th><th>STATUS</th><th class="totlab">TOTAL</th><th>DELETE</th></tr>
+								<? $login_email = user_email($_SESSION['userid']); $my_email = "robert@theloveplan.org"; 
+									$j=0; while($orow = mysqli_fetch_assoc($sql)) if(!($orow['email'] == $my_email && $login_email != $my_email)) {
+										$products = shopbag_explode($orow['shopbag']);
+										$subtotal=0; for($i=0;$i < count($products); $i++) {
+											$parr = product_explode($products[$i]); $c=$parr[0]; $p=$parr[1]; $q=$parr[2]; $color=$parr[3]; $forma=$parr[4]; $price=$parr[5];
+											$subtotal += $price * $q;
+									}
+									$total = $subtotal + discount($orow['discount']) + $orow['delivery'] + $orow['tax'];?>
+									<tr class="line">
+										<td class="date" style="width:25%"><?=date($date_format,$orow['timestamp'])?></td>
+										<td class="item" style="width:20%;padding:0 0 0 15px;">
+											<div class="text"><a href="/order/display/<?=$orow['number']?>/"><?=$orow['number']?></a></div>
+										</td>
+										<td class="item" style="width:20%;padding: 0 0 0 15px;">
+											<div class="text"><?=$orow['d_fname']." ".$orow['d_sname']?></div></td>
+										<td class="status" style="width:10%" title="<?=$orow['payment_response']?>"><?=$orow['status']?></td>
+										<td class="total">$<?=sprintf('%0.2f',$total)?></td>
+										<td class="item" style="width:10%;padding:15px 0 0 40px;">
+											<input type="checkbox" name="delete[<?=$j;?>]" id="delete[<?=$j;?>]" value="<?=$orow[id]?>"></td>
+									</tr>
+								<? $j++; }?>
+							</table>
+							<div class="checkout-info light">
+								<div class="fields">
+									<div class="field tmar"><div class="right"></div>
+										<input type="submit" name="submitOrders" value="UPDATE ORDERS"></div>
+								</div>
+							</div>
+						</form>
+					<?}?>
+				<?}?>
+
+				<!-- USERS & NEWSLETTER SIGNUPS -->
+				<?if($_GET['sel']=="users") { 
+
+					// users
+					if(isset($_POST['submitUsers'])) {
+						$sql = mysqli_query($dbc,"SELECT * FROM users"); while($urow = mysqli_fetch_assoc($sql))
+							mysqli_query($dbc,"UPDATE users SET trade = '".$_POST['trade'][$urow['id']]."' WHERE id = '".$urow['id']."'");
+					}
+					$sql = mysqli_query($dbc,"SELECT * FROM users WHERE password IS NOT NULL AND password <> ''"); // exclude newsletter form signups
+					if(mysqli_num_rows($sql)<1) {?><br>No users.<?}
+					else {?>
+						<div class="checkout-title admin-title">USERS</div>
+						<div class="checkout-note"></div>
+						<form action="" method="POST" enctype="multipart/form-data">
+							<table class="shbag-products">
+								<tr><th>NAME</th><th>EMAIL</th></tr>
+								<? while($urow = mysqli_fetch_assoc($sql)) {?>
+									<tr class="line">
+										<td class="item"><div class="text"><?=$urow['d_fname']." ".$urow['d_sname']?></div></td>
+										<td class="item"><div class="text"><?=$urow['email']?><?=($_GET['pid']=="pw")?" ".$urow['password']:""?></div></td>
+									</tr>
+								<?}?>
+							</table>
+							<div class="checkout-info light">
+								<div class="fields">
+									<div class="field tmar"><div class="right"></div>
+		 								<input type="submit" name="submitUsers" value="UPDATE USERS"></div>
+								</div>
+							</div>
+						</form>
+					<?}
+
+					// newsletter sign-ups from both users & orders
+					$sql = mysqli_query($dbc,"SELECT * FROM users WHERE receive_nl = 'on'");
+					if(mysqli_num_rows($sql)<1) {?><br>No sign ups.<?}
+					else {?>
+						<div class="checkout-title admin-title">NEWSLETTER SIGN-UPS</div>
+						<div class="checkout-note"></div>
+						<form action="" method="POST" enctype="multipart/form-data">
+							<table class="shbag-products">
+								<tr><th>EMAIL</th><th>SIGNED-UP</th></tr>
+								<? while($urow = mysqli_fetch_assoc($sql)) {?>
+									<tr class="line">
+										<td class="item"><div class="text"><?=$urow['email']?></div></td>
+										<td class="total"><input type="checkbox" name="signup[<?=$urow['id']?>]" checked></td>
+									</tr>
+								<?}?>
+							</table>
+							<div class="checkout-info light">
+								<div class="fields">
+									<div class="field tmar"><div class="right"></div>
+										<input type="submit" name="submitSignups" value="UPDATE NEWSLETTER SIGN-UPS"></div>
+								</div>
+							</div>
+						</form>
+					<?}?>
+
+				<?}?>
+
+			<?}?>
+
+		<?}?>
+		<div class="shbag-nextact">
+			<a class="continue" href="/account/"><big><big>&larr;</big></big> RETURN TO ACCOUNT</a>
+		</div>
+	</div>
+<?}?>
+
+<?if($page == "orders") { //************************* ?>
+	<div class="breadcrumbs">
+		<div class="breadcrumbs-outer">
+			<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+			<div class="breadcrumbs-bull">&#8227;</div>
+			<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/account/">ACCOUNT</a></div>
+			<div class="breadcrumbs-bull">&#8227;</div>
+			<div class="breadcrumbs-item">ORDERS</div>
+		</div>
+	</div>
+
+	<div class="account-outer">
+		<div class="page-header"><?=strtoupper($pageTitles[$page])?></div>
+		<? $sql = mysqli_query($dbc,"SELECT * FROM orders WHERE user_id = '".$_SESSION['userid']."' ORDER BY timestamp DESC");
+			if(mysqli_num_rows($sql)<1) {?><br>No orders.<?}
+			else {?>
+			<div class="checkout-title">YOUR ORDERS</div>
+			<table class="shbag-products">
+				<tr><th>DATE</th><th>ORDER NUMBER</th><th>STATUS</th><th class="totlab">TOTAL</th></tr>
+				<? while($orow = mysqli_fetch_assoc($sql)) {
+					$products = shopbag_explode($orow['shopbag']);
+					$subtotal=0; for($i=0;$i < count($products); $i++) {
+						$parr = product_explode($products[$i]); $c=$parr[0]; $p=$parr[1]; $q=$parr[2]; $color=$parr[3]; $forma=$parr[4]; $price=$parr[5];
+						$subtotal += $price * $q;
+					}
+					$total = $subtotal + discount($orow['discount']) + $orow['delivery'] + $orow['tax'];?>
+					<tr class="line">
+						<td class="date"><?=date($date_format,$orow['timestamp'])?></td>
+						<td class="item">
+							<div class="text"><a href="/order/display/<?=$orow['number']?>/"><?=$orow['number']?></a></div>
+						</td>
+						<td class="status"><?=$orow['status']?></td>
+						<td class="total">$<?=sprintf('%0.2f',$total)?></td>
+					</tr>
+				<?}?>
+			</table>
+		<?}?>
+		<div class="shbag-nextact">
+			<a class="continue" href="/account/"><big><big>&larr;</big></big> RETURN TO ACCOUNT</a>
+		</div>
+	</div>
+<?}?>
+
+<?if($page == "order") { //*************************
+
+	if(isset($_GET['pid']))							 $orow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM orders WHERE number = '".$_GET['pid']."'"));
+	else if(isset($_SESSION['orderno'])) $orow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM orders WHERE number = '".$_SESSION['orderno']."'"));
+
+	?>
+
+	<? if(isset($_SESSION['userid'])) {
+		$urow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM users WHERE email = '".$contact_email."'"));
+		$admin = $_SESSION['userid'] == $urow[id];
+		if($admin) {?>
+			<div class="breadcrumbs">
+				<div class="breadcrumbs-outer">
+					<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+					<div class="breadcrumbs-bull">&#8227;</div>
+					<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/account/">ACCOUNT</a></div>
+					<div class="breadcrumbs-bull">&#8227;</div>
+					<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/admin/">ADMIN</a></div>
+					<div class="breadcrumbs-bull">&#8227;</div>
+					<div class="breadcrumbs-item">ORDER DETAILS</div>
+				</div>
+			</div>
+		<?} else {?>
+			<div class="breadcrumbs">
+				<div class="breadcrumbs-outer">
+					<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/">HOME</a></div>
+					<div class="breadcrumbs-bull">&#8227;</div>
+					<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/account/">ACCOUNT</a></div>
+					<div class="breadcrumbs-bull">&#8227;</div>
+					<div class="breadcrumbs-item"><a class="breadcrumbs-item" href="/orders/">ORDERS</a></div>
+					<div class="breadcrumbs-bull">&#8227;</div>
+					<div class="breadcrumbs-item">ORDER DETAILS</div>
+				</div>
+			</div>
+		<?}?>
+	<?}?>
+
+	<div class="account-outer">
+		<? if($_GET['sel']=="confirm") {?>
+			<script>
+				localStorage.removeItem('shopbagCcode'); localStorage.removeItem('shopbagPcode');
+				localStorage.removeItem('shopbagQuant'); localStorage.removeItem('shopbagColor');
+				shopbagUpdate();
+			</script>
+			<br><br><div class="output">Thank you for your order.<br>Look for your order confirmation email<br>at <?=$orow['email']?>.</div><br>
+		<?}?>
+		<div class="page-header"><div>ORDER<br><small>No. <?=$orow['number']?></small></div></div>
+		<div class="checkout-title">ORDER <?=(isset($_SESSION['userid']))?"DETAILS":"CONFIRMATION"?></div>
+
+		<div class="checkout-info">
+			<div class="title">ORDER SUMMARY</div>
+			<div class="fields">
+				<div class="field">Order number: <div class="right"></div><div class="output" name="number"><?=$orow['number']?></div></div>
+				<div class="field">Order date: <div class="right"></div><div class="output" name="date"><?=date($date_format,$orow['timestamp'])?></div></div>
+				<div class="field">Order status: <div class="right"></div><div class="output" name="status"><?=$orow['status']?></div></div>
+			</div>
+		</div>
+		<div class="checkout-info light">
+			<div class="title">ACCOUNT DETAILS</div>
+			<div class="fields">
+				<div class="field">Email address: <div class="right"></div><div class="output" name="email"><?=$orow['email']?></div></div>
+			</div>
+		</div>
+		<div class="checkout-info">
+			<div class="title">DELIVERY DETAILS</div>
+			<div class="fields">
+				<?if($orow['d_title']){?>
+				<div class="field">Title: <div class="right"></div><div class="output" name="d_title"><?=$orow['d_title']?></div></div><?}?>
+				<div class="field">First name: <div class="right"></div><div class="output" name="d_fname"><?=$orow['d_fname']?></div></div>
+				<div class="field">Surname: <div class="right"></div><div class="output" name="d_sname"><?=$orow['d_sname']?></div></div>
+				<div class="field">Telephone: <div class="right"></div><div class="output" name="d_phone"><?=$orow['d_phone']?></div></div>
+				<div class="field">Address line 1: <div class="right"></div><div class="output" name="d_address1"><?=$orow['d_address1']?></div></div>
+				<?if($orow['d_address2']){?>
+				<div class="field">Address line 2: <div class="right"></div><div class="output" name="d_address2"><?=$orow['d_address2']?></div></div><?}?>
+				<div class="field">Town&nbsp;/&nbsp;City: <div class="right"></div><div class="output" name="d_city"><?=$orow['d_city']?></div></div>
+				<div class="field">State: <div class="right"></div><div class="output" name="d_state">
+					<?=($orow['d_country']=="US")?$us_states[$orow['d_state']]:$ca_provinces[$orow['d_state']]?></div></div>
+				<div class="field">Zip code: <div class="right"></div><div class="output" name="d_zip"><?=$orow['d_zip']?></div></div>
+				<!--div class="field">Country: <div class="right"></div><div class="output" name="d_country"><?=$countries[$orow['d_country']]?></div></div-->
+				<?if($delivery_services) {?>
+					<div class="field">Delivery service: <div class="right"></div><div class="output" name="d_service"><?=$delivery_services[$orow['d_service']]?></div></div>
+				<?}?>
+			</div>
+		</div>
+		<div class="checkout-info">
+			<div class="title">BILLING DETAILS</div>
+			<div class="fields addr" id="addrfields">
+				<?if($orow['b_title']){?>
+				<div class="field">Title: <div class="right"></div><div class="output" name="b_title"><?=$orow['b_title']?></div></div><?}?>
+				<div class="field">First name: <div class="right"></div><div class="output" name="b_fname"><?=$orow['b_fname']?></div></div>
+				<div class="field">Surname: <div class="right"></div><div class="output" name="b_sname"><?=$orow['b_sname']?></div></div>
+				<div class="field">Telephone: <div class="right"></div><div class="output" name="b_phone"><?=$orow['b_phone']?></div></div>
+				<div class="field">Address line 1: <div class="right"></div><div class="output" name="b_address1"><?=$orow['b_address1']?></div></div>
+				<?if($orow['b_address2']){?>
+				<div class="field">Address line 2: <div class="right"></div><div class="output" name="b_address2"><?=$orow['b_address2']?></div></div><?}?>
+				<div class="field">Town&nbsp;/&nbsp;City: <div class="right"></div><div class="output" name="b_city"><?=$orow['b_city']?></div></div>
+				<div class="field">State: <div class="right"></div><div class="output" name="b_state">
+					<?=($orow['b_country']=="US")?$us_states[$orow['b_state']]:$ca_provinces[$orow['b_state']]?></div></div>
+				<div class="field">Zip code: <div class="right"></div><div class="output" name="b_zip"><?=$orow['b_zip']?></div></div>
+				<!--div class="field">Country: <div class="right"></div><div class="output" name="b_country"><?=$countries[$orow['b_country']]?></div></div-->
+			</div>
+		</div>
+		<div class="checkout-info">
+			<div class="title">PAYMENT DETAILS</div>
+			<div class="fields">
+				<div class="field">Payment type: <div class="right"></div><div class="output" name="paytype"><?=$paytypes[$orow['paytype']]?></div></div>
+			</div>
+			<?if($orow['paytype']=='credit') {?>
+				<div class="fields credit" id="fcr">
+					<div class="field">Card type: <div class="right"></div><div class="output" name="cardtype"><?=$cardtypes[$orow['cardtype']]?></div></div>
+					<div class="field">Card number: <div class="right"></div><div class="output" name="cardnum"><?=lastfour($orow['cardnum'])?></div></div>
+					<div class="field">Name on card: <div class="right"></div><div class="output" name="cardname"><?=$orow['cardname']?></div></div>
+					<div class="field">Expiration month: <div class="right"></div><div class="output" name="expmo"><?=$months[$orow['expmo']]?></div></div>
+					<div class="field">Expiration year: <div class="right"></div><div class="output" name="expyr"><?=$orow['expyr']?></div></div>
+					<div class="field">Card security code: <div class="right"></div><div class="output" name="seccode"><?=hidesec($orow['cardtype'])?></div></div>
+				</div>
+			<?} else if($orow['paytype']=='paypal') {?>
+				<div class="fields paypal" id="fpp">
+				</div>
+			<?}?>
+		</div>
+		<div class="checkout-title tmar">ORDER ITEMS</div>
+		<table class="shbag-products">
+			<tr><th>ITEM</th><th></th><th>PRICE</th><th>QUANTITY</th><th class="totlab">TOTAL</th></tr>
+			<? $products = shopbag_explode($orow['shopbag']); $st=0; for($i=0;$i < count($products); $i++) {
+				$parr = product_explode($products[$i]); $c=$parr[0]; $p=$parr[1]; $q=$parr[2]; $color=$parr[3]; $forma=$parr[4]; $price=$parr[5];
+				$prow = mysqli_fetch_assoc(mysqli_query($dbc,"SELECT * FROM products WHERE category = '".$c."' AND prodcode = '".$p."' AND buynum != ''"));
+				$l = $prow['collection']; $d = $prow['colleclink']; $k = $prow['prodlink']; $t = $prow['title']; $s = $prow['buynum']; $e = $prow['price'];
+				$m = $prow['image']; $v = $prow['ivlsize'];
+				$tot = $q * $price;
+				$st += $tot;?>
+				<tr class="line">
+					<td class="item">
+						<a class="image" href="<?=prod_url($c)?>/buy/<?=$k?>/">
+							<img style="<?=$v?>" src="/images/<?=$c?>/<?=$m?>" alt="<?=$t?>"></a>
+					</td>
+					<td class="item">
+						<div class="text">
+							<a href="<?=prod_url($c)?>/buy/<?=$k?>/"><?=$s."<br>".$l?></a>
+							<br><small><a href="<?=prod_url($c)?>/<?=$d?>/"><?=$l?></a></small>
+							<br><small><a href="<?=prods_url($c)?>/"><?=$pageTitles[prods_page($c)]?></a></small>
+						</div>
+					</td>
+					<td class="price">$<?=$price?></td>
+					<td class="quantity"><?=$q." ".forma($q,$forma)?></td>
+					<td class="total">$<?=sprintf('%0.2f',$tot)?></td>
+				</tr>
+			<?}?>
+		</table>
+		<? $gt = $st + discount($orow['discount']) + $orow['delivery'] + $orow['tax']; ?>
+		<table class="shbag-totals">
+			<tr><td></td><td class="spacer"></td><td class="title bb">SUBTOTAL	 </td><td class="amount bb">$<?=sprintf('%0.2f',$st)?></td></tr>
+			<tr><td></td><td class="spacer"></td><td class="title bb">DISCOUNT	 </td><td class="amount bb">$<?=discount($orow['discount'])?></td></tr>
+			<tr><td></td><td class="spacer"></td><td class="title bb">DELIVERY	 </td><td class="amount bb">$<?=$orow['delivery']?></td></tr>
+			<tr><td></td><td class="spacer"></td><td class="title bb">TAX				 </td><td class="amount bb">$<?=$orow['tax']?></td></tr>
+			<tr><td></td><td class="spacer"></td><td class="title		">GRAND TOTAL</td><td class="amount	 ">$<?=sprintf('%0.2f',$gt)?></td></tr>
+		</table>
+		<div class="shbag-nextact">
+			<?if($admin) {?><a class="continue" href="/admin/"><big><big>&larr;</big></big> RETURN TO ADMIN</a>
+			<?} else {?><a class="continue" href="/orders/"><big><big>&larr;</big></big> RETURN TO ORDERS</a><?}?>
+		</div>
+	</div>
+<?}?>
+
+<?if($page == "checkout") {?>
+<div class="foot z5">
+	<div class="foot-outer">
+	</div>
+	<div class="foot-outer logo">
+		<div class="flogo">	
+			<?if($_SESSION['app_url'] == "https://sldproducts.effexhost.com/") {?>
+				<img class="flogo" src="/images/SLD-Products.png" alt="<?=$contact_name_part?> Logo">
+				<!-- <br>The home of natural quality -->
+			<?} else {?>
+				<!--img class="flogo" src="/images/Kens-Amish-Deli-And-Bakery.png" alt="<?=$contact_name_part?> Logo"-->
+				<img class="flogo" src="/images/Kens-Deli-Bakery-And-Gifts.png" alt="<?=$contact_name_part?> Logo">
+				<br>We select the best ingredients for our products<br>made the old fashioned way.
+			<?}?>
+		</div>
+	</div>
+	<div class="foot-outer">
+	</div>
+</div>
+<?} else if($page != "home" && $page != "shbagdrop") {?>
+<div class="foot z5">
+	<div class="footmenu">
+		<a class="mainmenu footmenu menufsize" href="/contact/">CONTACT</a>
+		<a class="mainmenu footmenu menufsize" href="/about/">ABOUT</a>
+		<br><br>
+		<a class="mainmenu footmenu menufsize" href="/privacy/"><small>Privacy Policy</small></a>
+	</div>
+	<div class="foot-outer logo">
+		<a class="flogo" href="<?=$app_url?>">
+			<?if($_SESSION['app_url'] == "https://sldproducts.effexhost.com/") {?>
+				<img class="flogo" src="/images/SLD-Products.png" alt="<?=$contact_name_part?> Logo">
+				<!-- <br>The home of natural quality -->
+			<?} else {?>
+				<!--img class="flogo" src="/images/Kens-Amish-Deli-And-Bakery.png" alt="<?=$contact_name_part?> Logo"-->
+				<img class="flogo" src="/images/Kens-Deli-Bakery-And-Gifts.png" alt="<?=$contact_name_part?> Logo">
+				<br>We select the best ingredients for our products<br>made the old fashioned way.
+			<?}?>
+		</a>
+	</div>
+	<div class="foot-outer">
+		<form action="#" class="newsletter">
+			<input type="text" placeholder="Sign up for SL Digest!" onkeypress="newsletterSignup(this,event)"
+			onmouseenter="newsletterSignupNote(this,1)" onmouseleave="newsletterSignupNote(this,0)">
+			<div class="error"></div>
+		</form>
+	</div>
+	<div class="foot-social">
+		<div class="foot-social-inner">
+			<a href="https://www.facebook.com/kensamishmarket/" target="_blank"><img style="padding-left:0px" src="/images/fac.png"></a>
+			<a href="https://www.instagram.com/kensamishmarketdeli/" target="_blank"><img style="padding-left:18px" src="/images/inst.png"></a>
+			<a href="https://twitter.com/KensDeli" target="_blank"><img style="padding-left:13px" src="/images/twi.png"></a>
+		</div>
+	</div>
+</div>
+<?}?>
+
+<?if($page != "shbagdrop") {?>
+<script>
+	shopbagUpdate();
+	document.documentElement.scrollTop = document.body.scrollTop = "<?=isset($_GET['st'])?$_GET['st']:isset($_POST['st'])?$_POST['st']:'0';?>";
+	//if(<?=isset($_POST['ip'])?$_POST['ip']:'0';?>) eC0('inventory-popup').style.display = 'block';
+</script>
+</body>
+</html>
+<?}?>
+

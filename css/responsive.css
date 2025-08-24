@@ -1,0 +1,155 @@
+@media (max-width: 768px) {
+		#navbar .item-center span {
+  background: #0A7BBD;
+  padding: 15px 25px;
+  color: #fff;
+}
+#navbar {
+ 
+  padding:  0;
+}
+#mobile\ menu {
+  z-index: 999;
+}
+#mobile\ menu li a{
+	font-size:16px;
+}
+
+.logo img {
+  height: 55px;
+  margin-bottom: 0;
+}
+	.hero-text{
+		text-align:center;
+	}
+	.hero-text h2{
+		font-size:45px;
+		line-height:55px;
+		
+	}
+	.tour-top h2{
+		font-size:32px;
+		line-height:42px;
+		text-align:center;
+	}
+	.custom-heading{
+		text-align:center;
+	}
+	.card.theme {
+  text-align: center;
+  padding: 10px 5px 5px;
+	}
+	.card.theme h5{
+		font-size:12px;
+	}
+	#about h4{
+		text-align:center;
+	}
+	#about h2{
+		text-align:center;
+	}
+	.mobile-hide{
+		display:none;
+	}
+#tour-contentt {
+  padding: 7px 10px !important;
+  font-size: 13.425px;
+  font-weight: 400;
+}
+#tour-contentt {
+  padding: 7px 10px !important;
+  font-size: 13.425px;
+  font-weight: 400;
+}
+#tour-content {
+  padding: 7px 10px;
+}
+.top-destinaton h3{
+	text-align:center;
+}
+.mobile-flex{
+  display: flex;
+  justify-content: space-between;
+}
+.tour-button{display:none;}
+#explorer {
+	padding-top: 30px;
+  }
+  #about p{
+	text-align: center;
+  }
+  #faq {
+	padding: 20px 0;
+  }
+  #tmi {
+	padding:20px 0;
+	margin-bottom: 20px;
+}
+.choose-us.P-50 {
+	padding: 20px 0;
+  }
+  .Request-private.p-50 .flex-between {
+	flex-direction: column;
+  }
+  .customer-saying.p-30 .flex-between {
+	flex-direction: column;
+  }
+  .egypt-details{
+	flex-direction: column;
+  }
+  .bookmundi .flex-between {
+	flex-direction: column;
+  }
+  .review-onone {
+	overflow: hidden;
+	max-width: 100%;
+	width:100%;
+  }
+  .Availability-content .tab-item {
+	margin-bottom: 10px;
+  }
+  .avility-card .book-now {
+	border-radius: 4px;
+	width: unset;
+	height: unset;
+	text-align: center;
+	padding: 10px;
+  }
+  .avility-card h4{
+	font-size:11px;
+	line-height:20px;
+  }
+  .avility-card h5{
+	font-size:9px;
+	line-height:17px;
+  }
+  .container {
+	max-width: 90%;
+	margin: 0 auto;
+  }
+  .citypackage .grids{
+	grid-template-columns: 1fr;
+  } 
+  .citypackage .grid{
+	margin-bottom: 15px;
+  }
+  .custom-heading {
+	font-size: 18px;
+	line-height: 28px;
+  }
+  .besttime.p-50{
+	padding:20px 0;
+  }
+  .p-30{
+	padding:15px 0;
+  }
+  #visit-place{
+	padding:15px 0;
+  }
+
+}
+@media (min-width: 768px) {
+	.desktop-hide{
+		display:none;
+	}
+}

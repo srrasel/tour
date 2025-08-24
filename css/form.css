@@ -1,0 +1,533 @@
+/* 
+/*Background color
+#grad1 {
+    background-color:  #9C27B0;
+    background-image: linear-gradient(120deg, #FF4081, #81D4FA);
+}
+#progressbar li{
+    position: relative;
+}
+#progressbar li::before{
+    position: absolute;
+    content:'';
+height: 42.33px;
+left: 11.88%;
+right: 85.32%;
+top: 255.81px;
+
+background: #1C98F7;
+border-radius: 78.7802px;
+}
+
+/*form styles
+#msform {
+    text-align: center;
+    position: relative;
+    margin-top: 20px;
+}
+
+#msform fieldset .form-card {
+    background: white;
+    border: 0 none;
+    border-radius: 0px;
+    box-shadow: 0 2px 2px 2px rgba(0, 0, 0, 0.2);
+    padding: 20px 40px 30px 40px;
+    box-sizing: border-box;
+    width: 94%;
+    margin: 0 3% 20px 3%;
+
+    /*stacking fieldsets above each other
+    position: relative;
+}
+
+#msform fieldset {
+    background: white;
+    border: 0 none;
+    border-radius: 0.5rem;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding-bottom: 20px;
+
+    /*stacking fieldsets above each other
+    position: relative;
+}
+
+/*Hide all except first fieldset
+#msform fieldset:not(:first-of-type) {
+    display: none;
+}
+
+#msform fieldset .form-card {
+    text-align: left;
+    color: #9E9E9E;
+}
+
+#msform input, #msform textarea {
+    padding: 0px 8px 4px 8px;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    border-radius: 0px;
+    margin-bottom: 25px;
+    margin-top: 2px;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: montserrat;
+    color: #2C3E50;
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+
+
+
+/*progressbar
+#progressbar {
+    margin-bottom: 30px;
+    overflow: hidden;
+    color: lightgrey;
+}
+
+#progressbar .active {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14.1099px;
+    line-height: 20px;
+    text-transform: uppercase;
+    color: #0A7BBD;
+}
+
+#progressbar li {
+    list-style-type: none;
+    width: 18%;
+    float: left;
+    position: relative;
+    padding:33px 10px;
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14.1099px;
+    line-height: 20px;
+    text-transform: uppercase;
+    color: #909090;
+}
+#progressbar .active::before{
+    background:#1C98F7 !important;
+}
+#progressbar li::after {
+    position: absolute;
+    height: 5px;
+    width: 100%;
+background: #E5E5E4;
+    top: 13px;
+    content: '';
+    left: 0;
+  }
+
+  #progressbar li::before {
+    position: absolute;
+    content: '';
+    height: 30.33px;
+    left: 11.88%;
+    right: 85.32%;
+    top: 0;
+    background: #909090 !important;
+    border-radius: 78.7802px;
+    width: 30px;
+    z-index: 999;
+  }
+  #progressbar li:last-child::after{
+    position: absolute;
+    height: 5px;
+    width: 90px;
+background: #E5E5E4;
+    top: 13px;
+    content: '';
+    left: 0;
+  }
+
+/*Icons in the ProgressBar
+
+
+/*Color number of the step and the connector before it*/
+#progressbar li.active:before, #progressbar li.active:after {
+    background: skyblue;
+}
+
+/*Imaged Radio Buttons
+.radio-group {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.radio {
+    display:inline-block;
+    width: 204;
+    height: 104;
+    border-radius: 0;
+    background: lightblue;
+    box-shadow: 0 2px 2px 2px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    cursor:pointer;
+    margin: 8px 2px; 
+}
+
+.radio:hover {
+    box-shadow: 2px 2px 2px 2px rgba(0, 0, 0, 0.3);
+}
+
+.radio.selected {
+    box-shadow: 1px 1px 2px 2px rgba(0, 0, 0, 0.1);
+}
+
+/*Fit image in bootstrap div
+.fit-image{
+    width: 100%;
+    object-fit: cover;
+}
+
+.form-content h2{
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20.1608px;
+    line-height: 30px;
+    color: #62637C;
+    margin-bottom:30px;
+}
+.form-card{
+    border:1px solid #dbd6d6;
+    text-align: center;
+    padding:20px;
+    border-radius: 4px;
+}
+.form-card img{
+
+    margin-bottom: 20px;
+    width:30px;
+    
+}
+
+.form-card h5{
+    font-family: 'Roboto';
+font-style: normal;
+font-weight: 700;
+font-size: 17.4554px;
+line-height: 25px;
+text-align: center;
+color: #62637C;
+}
+.form-content button{
+    padding:10px 50px;
+    margin-top:10px;
+}
+*/
+.form-section {
+  padding: 50px 0;
+}
+.trip-card h3{
+    
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 19.0491px;
+    line-height: 28px;
+    color: #62637C;
+    margin-bottom: 10px;
+}
+.trip-card
+.flex.flex-between {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20.1608px;
+    line-height: 30px;
+    display: flex;
+    align-items: center;
+    color: #62637C;
+  }
+  .its-work h2{
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 25px;
+    color: #62637C;
+    margin-bottom:40px;
+  }
+  .card-with-number{
+    position: relative;
+    border:1px solid #dbd6d6;
+    padding:20px;
+    border-radius:8px;
+    height:250px;
+  }
+  .card-with-number h3{
+    border-radius:100%;
+    border:1px solid #0A7BBD;
+    width:30px;
+    height:30px;
+    line-height: 28px;
+    font-family: 'Roboto';
+font-style: normal;
+font-weight: 700;
+font-size: 20px;
+line-height: 25px;
+text-align: center;
+color: #0A7BBD;
+position: absolute;
+left:45%;
+top:-16px;
+z-index:1;
+background:#fff;
+  }
+  .card-with-number h4{
+    font-family: 'Roboto';
+font-style: normal;
+font-weight: 700;
+font-size: 14px;
+line-height: 20px;
+text-align: center;
+color: #62637C;
+margin-top:20px;
+  }
+  .card-with-number p{
+    font-family: 'Roboto';
+font-style: normal;
+font-weight: 300;
+font-size: 15px;
+line-height: 25px;
+text-align: center;
+color: #62637C;
+
+  }
+  .mr-30{
+    padding-right:20px;
+  }
+  .tripp h5{
+    font-family: 'Roboto';
+font-style: normal;
+font-weight: 700;
+font-size: 18.2079px;
+line-height: 26px;
+text-align: center;
+color: #62637C;
+  } */
+  .form-section {
+    padding: 50px 0;
+  }
+
+  
+
+
+  /* Multistep form css */
+  /*form styles*/
+#msform {
+
+	position: relative;
+}
+#msform fieldset {
+	background: #fff;
+	border: 0 none;
+	border-radius: 4px;
+
+	padding: 50px 30px;
+	box-sizing: border-box;
+	
+	
+	/*stacking fieldsets above each other*/
+	position: relative;
+}
+/*Hide all except first fieldset*/
+#msform fieldset:not(:first-of-type) {
+	display: none;
+}
+/*inputs*/
+#msform input, #msform textarea {
+	padding: 15px;
+	border: 1px solid #ccc;
+	border-radius: 3px;
+	margin-bottom: 10px;
+	width: 100%;
+	box-sizing: border-box;
+	font-family: montserrat;
+	color: #2C3E50;
+	font-size: 13px;
+}
+/*buttons*/
+#msform .action-button {
+	width: 100px;
+	background: #27AE60;
+	font-weight: bold;
+	color: white;
+	border: 0 none;
+	border-radius: 1px;
+	cursor: pointer;
+	padding: 10px;
+	margin: 10px 5px;
+  text-decoration: none;
+  font-size: 14px;
+}
+.next.action-button{
+  margin-top:30px !important;
+}
+#msform .action-button:hover, #msform .action-button:focus {
+	box-shadow: none;
+}
+/*headings*/
+.q-heading {
+    font-size: 20px;
+    line-height: 29px;
+    font-weight: 700;
+    color: #000;
+    margin: 0;
+    display: block;
+    font-family: "Roboto",Arial,Verdana,Helvetica,sans-serif;
+    margin-bottom:20px;
+    
+  }
+
+/*progressbar*/
+#progressbar {
+	margin-bottom: 30px;
+	overflow: hidden;
+	/*CSS counters to number the steps*/
+	counter-reset: step;
+  background:#fff;
+  padding:20px;
+  border-radius:4px;
+}
+#progressbar li {
+	list-style-type: none;
+	color: #000;
+	text-transform: capitalize;
+	font-size: 15px;
+	width: 20%;
+	float: left;
+	position: relative;
+  text-align: center;
+}
+#progressbar li:before {
+	content: counter(step);
+counter-increment: step;
+width: 30px;
+line-height: 28px;
+display: block;
+font-size: 10px;
+color: #333;
+background: #e5e5e4;
+border-radius: 100%;
+margin: 0 auto 5px auto;
+font-size: 20px;
+font-weight: 700;
+z-index:7;
+position: relative;
+}
+/*progressbar connectors*/
+#progressbar li:after {
+	content: '';
+	width: 100%;
+	height: 2px;
+	background: #e5e5e4;
+	position: absolute;
+	left: -50%;
+	top: 13px;
+	z-index: 5; /*put it behind the numbers*/
+}
+#progressbar li:first-child:after {
+	/*connector not needed before the first step*/
+	content: none; 
+}
+/*marking active/completed steps green*/
+/*The number of the step and the connector before it = green*/
+#progressbar li.active:before,  #progressbar li.active:after{
+	background: #27AE60;
+	color: white;
+}
+
+
+  input[type="radio"]:checked+label{   border: 2px solid #3eb368; } 
+  .custom-control-label {
+    width: 100%;
+    padding: 20px;
+    border: 1px solid  rgba(213, 213, 213, 0.95);
+    text-align: center;
+    width: 100%;
+    border-radius: 4px;
+  }
+  .custom-control.custom-radio.image-checkbox input {
+    opacity: 0.0;
+  }
+  .custom-control.custom-radio.image-checkbox img {
+    width: 40px;
+    height: 40px;
+  }
+  .col-md-8.form-traveling {
+    position: relative;
+  }
+  .trip-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 4px;
+  }
+  .custom-control h5{
+    
+      font-size: 14px;
+      font-weight: 700;
+    
+  }
+  .btn-login{
+      width: 100%;
+      border: none;
+      margin: 0;
+      outline: none;
+      position: relative;
+      text-transform: uppercase;
+      padding: 14px 20px 14px 70px;
+      text-align: left;
+      margin-bottom:15px;
+      display: block;
+      color: #fff;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 19px;
+  text-align: center;
+  border-radius: 3px;
+    
+  }
+  .btn-login:hover{
+    color:#fff;
+  }
+  .login-email{
+
+background: #3eb368;
+
+
+  }
+  .login-facebook{
+    background: #324d8f;
+  
+  }
+  .login-google{
+    background: #dd4b39;
+  }
+  .login-apple{
+    background:#000000;
+  }
+  .btn-login::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50px;
+    bottom: 0;
+    background: rgba(255,255,255,.45);
+    width: 1px;
+  }
+.btn-login  i{
+    color: #fff;
+position: absolute;
+left: 17px;
+top: 14px;
+font-size: -107px;
+  }
+
